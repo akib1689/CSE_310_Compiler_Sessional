@@ -15,8 +15,7 @@ class linked_list {
     linked_list();
 
     //---------dictionary func----------------
-    void insert(string, char, int);
-    void insert(string, char);
+    bool insert(string, char);
     symbol_info* search(string);
     bool remove(string);
     int size();
@@ -34,16 +33,20 @@ linked_list::linked_list() {
 linked_list::~linked_list() { delete this->head; }
 
 /**
- * 
- * @brief to insert a symbol that is variable
+ * @brief to insert a symbol
  * This fucntion puts the new symbol in the head of the linked list. the newest
  * element is infront of the list
  * @param name:        name of the symbol
  * @param identifier:  what type of symbol is this
- * @param value :      current value of the symbol (only applicable to the variable)
+ * @return true        if it successfully inserts
+ * @return false       if the symbol is already present
  */
-void linked_list::insert(string name, char identifier, int value) {
-    symbol_info* symbol = new symbol_info(name, identifier, value);
+bool linked_list::insert(string name, char identifier) {
+    if (this->search(name) != NULL) {
+        return false;
+    }
+
+    symbol_info* symbol = new symbol_info(name, identifier);
     if (this->head == NULL) {
         this->head = symbol;
     } else {
@@ -51,17 +54,7 @@ void linked_list::insert(string name, char identifier, int value) {
         this->head = symbol;
     }
     this->length++;
-}
-
-/**
- * @brief overloaded function to insert other symbol than variable
- * This function is used to insert other symbols than a variable in the symbol
- * table other symbols don't have value assosiated with them
- * @param name          name of the symbol that is to be inserted
- * @param identifier    what type of symbol is this
- */
-void linked_list::insert(string name, char identifier) {
-    this->insert(name, identifier, -1);
+    return true;
 }
 
 // function to search a symbol in a list
@@ -117,7 +110,7 @@ void linked_list::print() {
     symbol_info* current = this->head;
     while (current != NULL) {
         current->print_node();
-        cout << " --> ";
+        cout << " -- ";
         current = current->get_next();
     }
 }

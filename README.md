@@ -37,16 +37,11 @@ command to run if program contains helper info
 
 Contributors names and contact info
 
-ex. Dominique Pizzie  
-ex. [@DomPizzie](https://twitter.com/dompizzie)
+Akibur Rahman | [Github](https://github.com/akib-89) | [Facebook](https://www.facebook.com/profile.php?id=100010756200351) | [LinkedIn](https://www.linkedin.com/in/akibur-rahman-919b40188/)
 
 ## Version History
 
-* 0.2
-    * Various bug fixes and optimizations
-    * See [commit change]() or See [release history]()
-* 0.1
-    * Initial Release
+* No released version yet(this was not ment to be released)
 
 ## License
 

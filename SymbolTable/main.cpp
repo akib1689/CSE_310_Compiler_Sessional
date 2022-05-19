@@ -1,12 +1,14 @@
 #include <iostream>
 
-#include "scope_table.cpp"
+#include "symbol_table.cpp"
 using namespace std;
 
 int main() {
-    scope_table table(7);
+    symbol_table table(7);
     table.insert("a", 'a');
+    table.create_scope();
     table.insert("h", 'h');
-    table.insert("x", 'v', 20);
-    table.print();
+    table.create_scope();
+    table.insert("o",'o');
+    table.print_all();
 }
