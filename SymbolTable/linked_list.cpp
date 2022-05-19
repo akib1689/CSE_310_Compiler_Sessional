@@ -1,10 +1,10 @@
-#include <stdio.h>
+#include <iostream>
+
 #include "symbol_info.cpp"
 
-
-/* 
-*   Linked list class to store the chains of the hash table
-*/
+/**
+ * Linked list class to store the chains of the hash table
+ */
 
 class linked_list {
    private:
@@ -15,9 +15,10 @@ class linked_list {
     linked_list();
 
     //---------dictionary func----------------
-    void insert(char*, char, int);
-    symbol_info* search(char*);
-    bool remove(char*);
+    void insert(string, char, int);
+    void insert(string, char);
+    symbol_info* search(string);
+    bool remove(string);
     int size();
 
     void print();
@@ -32,16 +33,16 @@ linked_list::linked_list() {
 
 linked_list::~linked_list() { delete this->head; }
 
-// function to insert a symbol
-//
-// This fucntion puts the new symbol in the head of the linked list. the newest
-// element is infront of the list
-//
-// @param-
-//  name:       name of the symbol
-//  identifier: what type of symbol is this
-//  value:      current value of the symbol (only applicable to the variable)
-void linked_list::insert(char* name, char identifier, int value) {
+/**
+ * 
+ * @brief to insert a symbol that is variable
+ * This fucntion puts the new symbol in the head of the linked list. the newest
+ * element is infront of the list
+ * @param name:        name of the symbol
+ * @param identifier:  what type of symbol is this
+ * @param value :      current value of the symbol (only applicable to the variable)
+ */
+void linked_list::insert(string name, char identifier, int value) {
     symbol_info* symbol = new symbol_info(name, identifier, value);
     if (this->head == NULL) {
         this->head = symbol;
@@ -52,16 +53,27 @@ void linked_list::insert(char* name, char identifier, int value) {
     this->length++;
 }
 
+/**
+ * @brief overloaded function to insert other symbol than variable
+ * This function is used to insert other symbols than a variable in the symbol
+ * table other symbols don't have value assosiated with them
+ * @param name          name of the symbol that is to be inserted
+ * @param identifier    what type of symbol is this
+ */
+void linked_list::insert(string name, char identifier) {
+    this->insert(name, identifier, -1);
+}
+
 // function to search a symbol in a list
 //
 // This function searchs from head to the last position of the list
 // @param-
 //  name:       name of the symbol that should be search
-symbol_info* linked_list::search(char* name) {
+symbol_info* linked_list::search(string name) {
     symbol_info* temp = this->head;
 
     while (temp != NULL) {
-        if (*(temp->get_name()) == *(name)) {
+        if (temp->get_name() == name) {
             return temp;
         }
         temp = temp->get_next();
@@ -75,12 +87,12 @@ symbol_info* linked_list::search(char* name) {
 // This function removes the symbol from the linked list
 // @param-
 //  name:       name of the symbol that is to be deleted from the list
-bool linked_list::remove(char* name) {
+bool linked_list::remove(string name) {
     symbol_info* temp = this->head;
     symbol_info* prev = NULL;
 
     while (temp != NULL) {
-        if (*(temp->get_name()) == *(name)) {
+        if (temp->get_name() == name) {
             if (prev == NULL) {
                 // head is the symbol to delete
                 this->head = temp->get_next();

@@ -6,17 +6,17 @@ using namespace std;
 class symbol_info {
    private:
     symbol_info* next;
-    char* name;
+    string name;
     char identifier;
     int value;
 
    public:
-    symbol_info(char*, char, int);
+    symbol_info(string, char, int);
     symbol_info(const symbol_info&);
     ~symbol_info();
 
     int get_value();
-    char* get_name();
+    string get_name();
     char get_identifier();
     symbol_info* get_next();
     void set_value(int);
@@ -30,9 +30,8 @@ class symbol_info {
  * @param identifier the type of symbol 
  * @param value the current value of the symbol (it is applicable to only variables)
 */
-symbol_info::symbol_info(char* name, char identifier, int value) {
+symbol_info::symbol_info(string name, char identifier, int value) {
     this->name = new char;
-    *(this->name) = *(name);
     this->name = name;
     this->identifier = identifier;
     this->value = value;
@@ -42,14 +41,14 @@ symbol_info::symbol_info(char* name, char identifier, int value) {
 // copy constructor
 symbol_info::symbol_info(const symbol_info& that) {
     this->name = new char;
-    *(this->name) = *(that.name);
+    this->name = that.name;
     this->identifier = that.identifier;
     this->value = that.value;
     this->next = that.next;
 }
 
 // destructor
-symbol_info::~symbol_info() { delete this->name; }
+symbol_info::~symbol_info() { }
 
 // dictionary getter setter
 void symbol_info::set_value(int value) { this->value = value; }
@@ -61,7 +60,7 @@ void symbol_info::set_next(symbol_info* next) { this->next = next; }
 
 symbol_info* symbol_info::get_next() { return this->next; }
 
-char* symbol_info::get_name() { return this->name; }
+string symbol_info::get_name() { return this->name; }
 
 char symbol_info::get_identifier() { return this->identifier; }
 
