@@ -21,7 +21,7 @@ class symbol_table {
     symbol_table(int length);
 
     //---------dictionary function-----------
-    void insert(string, char);
+    void insert(string, string);
     symbol_info* search(string);
     bool remove(string);
 
@@ -41,20 +41,16 @@ symbol_table::symbol_table(int length) {
     this->top = new scope_table(length, NULL);
 }
 
-symbol_table::~symbol_table() {}
+symbol_table::~symbol_table() { delete top; }
 
 //-----------dictionary function------------
-void symbol_table::insert(string name, char identifier) {
+void symbol_table::insert(string name, string identifier) {
     top->insert(name, identifier);
 }
 
-symbol_info* symbol_table::search(string name) {
-    top->search(name);
-}
+symbol_info* symbol_table::search(string name) { top->search(name); }
 
-bool symbol_table::remove(string name) {
-    
-}
+bool symbol_table::remove(string name) {}
 
 //------------creation and deletion of scope-----------------
 /**
@@ -66,11 +62,12 @@ void symbol_table::create_scope() {
     this->top = new_scope;
 }
 /**
- * @brief this function removes the topmost element of the stack 
- * innermost scope of the program. this is called whenever '}' braces appears 
- * 
+ * @brief this function removes the topmost element of the stack
+ * innermost scope of the program. this is called whenever '}' braces appears
+ *
  * @return true     if the deletion is successful
- * @return false    if the deletion is not successful (in case of the programmer wants to delete the root scope)
+ * @return false    if the deletion is not successful (in case of the programmer
+ * wants to delete the root scope)
  */
 bool symbol_table::delete_scope() {
     scope_table* new_top = this->top->get_parent();
@@ -84,22 +81,18 @@ bool symbol_table::delete_scope() {
 
 /**
  * @brief prints the inner most scope and that's varaiable
- * 
+ *
  */
-void symbol_table::print_top() {
-    this->top->print();
-}
+void symbol_table::print_top() { this->top->print(); }
 /**
  * @brief this function prints all the scope that is currently active
- * 
+ *
  */
 void symbol_table::print_all() {
     scope_table* current = this->top;
-    while (current != NULL)
-    {
+    while (current != NULL) {
         current->print();
-        cout<<endl;
+        cout << endl;
         current = current->get_parent();
     }
-    
 }

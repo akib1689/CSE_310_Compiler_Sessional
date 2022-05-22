@@ -8,14 +8,15 @@
 
 class linked_list {
    private:
-    symbol_info* head;
+    symbol_info* head;                  //here this is interprated as tail of the list
     int length;
+    void print_recur(symbol_info*);
 
    public:
     linked_list();
 
     //---------dictionary func----------------
-    bool insert(string, char);
+    int insert(string, string);
     symbol_info* search(string);
     bool remove(string);
     int size();
@@ -38,12 +39,12 @@ linked_list::~linked_list() { delete this->head; }
  * element is infront of the list
  * @param name:        name of the symbol
  * @param identifier:  what type of symbol is this
- * @return true        if it successfully inserts
- * @return false       if the symbol is already present
+ * @return int         index of the new symbol that is inserted
+ * @return -1          if could not inserted (if the symbol was already present)
  */
-bool linked_list::insert(string name, char identifier) {
+int linked_list::insert(string name, string identifier) {
     if (this->search(name) != NULL) {
-        return false;
+        return -1;
     }
 
     symbol_info* symbol = new symbol_info(name, identifier);
@@ -53,15 +54,14 @@ bool linked_list::insert(string name, char identifier) {
         symbol->set_next(this->head);
         this->head = symbol;
     }
-    this->length++;
-    return true;
+    return this->length++;
 }
 
-// function to search a symbol in a list
-//
-// This function searchs from head to the last position of the list
-// @param-
-//  name:       name of the symbol that should be search
+/**
+ * @brief 
+ * This function searchs from head to the last position of the list
+ * @param name       name of the symbol that should be search
+ */
 symbol_info* linked_list::search(string name) {
     symbol_info* temp = this->head;
 
@@ -107,10 +107,16 @@ int linked_list::size() { return this->length; }
 
 // print function
 void linked_list::print() {
-    symbol_info* current = this->head;
-    while (current != NULL) {
+    this->print_recur(this->head);
+}
+
+void linked_list::print_recur(symbol_info* current){
+    if (current->get_next() == NULL) {
         current->print_node();
-        cout << " -- ";
-        current = current->get_next();
+        return;
     }
+
+    print_recur(current->get_next());
+    cout<<"--";
+    current->print_node();
 }

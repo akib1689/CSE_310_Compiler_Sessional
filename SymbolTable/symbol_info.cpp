@@ -7,15 +7,15 @@ class symbol_info {
    private:
     symbol_info* next;
     string name;
-    char identifier;
+    string identifier;
 
    public:
-    symbol_info(string, char);
+    symbol_info(string, string);
     symbol_info(const symbol_info&);
     ~symbol_info();
 
     string get_name();
-    char get_identifier();
+    string get_identifier();
     symbol_info* get_next();
     void set_next(symbol_info*);
 
@@ -27,9 +27,10 @@ class symbol_info {
  * @param identifier the type of symbol 
  * @param value the current value of the symbol (it is applicable to only variables)
 */
-symbol_info::symbol_info(string name, char identifier) {
+symbol_info::symbol_info(string name, string identifier) {
     this->name = new char;
     this->name = name;
+    this->identifier = new char;
     this->identifier = identifier;
     next = NULL;
 }
@@ -56,7 +57,7 @@ symbol_info* symbol_info::get_next() { return this->next; }
 
 string symbol_info::get_name() { return this->name; }
 
-char symbol_info::get_identifier() { return this->identifier; }
+string symbol_info::get_identifier() { return this->identifier; }
 
 
 // function to print the node

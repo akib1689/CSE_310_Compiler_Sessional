@@ -1,0 +1,6 @@
+insert i
+lookup L
+delete D
+print P
+enter_scope S
+exit_scope E
