@@ -22,7 +22,7 @@ class scope_table {
     int child;
 
     unsigned int hash_value(string);
-    unsigned long sdbm(char*);
+    static unsigned long sdbm(string);
 
    public:
     scope_table(int, scope_table* parent);
@@ -58,12 +58,12 @@ scope_table::scope_table(int length, scope_table* parent) {
         parent->child++;
         this->id = parent->id + "." + to_string(parent->child);
     }
-    cout << "New ScopeTable with id " << this->id << " created."<< endl;
+    cout << "New ScopeTable with id " << this->id << " created." << endl;
 }
 
 scope_table::~scope_table() {
     delete (this->array);
-    cout << "ScopeTable with id " << this->id << " deleted."<< endl;
+    cout << "ScopeTable with id " << this->id << " deleted." << endl;
 }
 
 //--------------------private util function---------------------------
@@ -75,12 +75,15 @@ scope_table::~scope_table() {
  * @param   name             name of the symbol whose hash is to be determined
  * @return  unsigned long    sdbm hash value of the name
  */
-unsigned long scope_table::sdbm(char* str) {
+unsigned long scope_table::sdbm(string str) {
     unsigned long hash = 0;
-    int c;
-    while (c = *str++) {
-        hash = c + (hash << 6) + (hash << 16) - hash;
+    unsigned int i = 0;
+    unsigned int len = str.length();
+
+    for (i = 0; i < len; i++) {
+        hash = (str[i]) + (hash << 6) + (hash << 16) - hash;
     }
+
     return hash;
 }
 
@@ -93,7 +96,7 @@ unsigned long scope_table::sdbm(char* str) {
 unsigned int scope_table::hash_value(string name) {
     /* hash<string> standard_hash;
     return (standard_hash(name) % length); */
-    unsigned long hash = sdbm((char*)(&name));
+    unsigned long hash = sdbm(name);
 
     return hash % length;
 }
@@ -110,7 +113,7 @@ unsigned int scope_table::hash_value(string name) {
  * @return false        if already in the table
  */
 bool scope_table::insert(string name, string identifier) {
-    unsigned int hash_val = this->hash_value(name);
+    unsigned int hash_val = scope_table::hash_value(name);
     int index = array[hash_val].insert(name, identifier);
     if (index < 0) {
         // unsuccessful
@@ -136,18 +139,17 @@ bool scope_table::insert(string name, string identifier) {
 symbol_info* scope_table::search(string name) {
     scope_table* current = this;
     while (current != NULL) {
-        /* code */
-        unsigned int hash_val = current->hash_value(name);
+        unsigned int hash_val = scope_table::hash_value(name);
         symbol_info* cur_sym = current->array[hash_val].search(name);
         int index = current->array[hash_val].get_index(name);
-        if(cur_sym != NULL && index >= 0){
-            cout<<"Found in ScopeTable# "<< current->id << " at position "
-                << hash_val<< " , " << index <<endl;
+        if (cur_sym != NULL && index >= 0) {
+            cout << "Found in ScopeTable# " << current->id << " at position "
+                 << hash_val << " , " << index << endl;
             return cur_sym;
         }
         current = current->parent;
     }
-    cout<<"Not found"<<endl;
+    cout << "Not found" << endl;
     return NULL;
 }
 
@@ -161,20 +163,20 @@ symbol_info* scope_table::search(string name) {
  * @return false    if the removal is unsuccessful (symbol is not present)
  */
 bool scope_table::remove(string name) {
-
     scope_table* current = this;
 
     while (current != NULL) {
         /* code */
-        unsigned int hash_val = current->hash_value(name);
-        int index = array[hash_val].get_index(name);
-        if(array[hash_val].remove(name)){
-            cout<<"Removed from ScopeTable# "<< this->id << " at position "
-                << hash_val<< " , " << index <<endl;
+        unsigned int hash_val = scope_table::hash_value(name);
+        int index = current->array[hash_val].get_index(name);
+        if (current->array[hash_val].remove(name)) {
+            cout << "Removed from ScopeTable# " << current->id
+                 << " at position " << hash_val << " , " << index << endl;
             return true;
         }
-        current = this->parent;
+        current = current->parent;
     }
+    cout << "Could not delete " << name << endl;
     return false;
 }
 
@@ -183,7 +185,7 @@ scope_table* scope_table::get_parent() { return this->parent; }
 
 //-----------------print function--------------
 void scope_table::print() {
-    cout<<"Scope Table# "<< this->id<<endl;
+    cout << "Scope Table# " << this->id << endl;
     for (int i = 0; i < this->length; i++) {
         cout << i << "----";
         array[i].print();

@@ -44,7 +44,10 @@ symbol_info::symbol_info(const symbol_info& that) {
 }
 
 // destructor
-symbol_info::~symbol_info() { }
+symbol_info::~symbol_info() {
+    // patience
+    // don't do anything stupid 
+ }
 
 // dictionary getter setter
 

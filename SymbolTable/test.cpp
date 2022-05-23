@@ -8,7 +8,7 @@ int main(){
     table.insert("h","h");
     table.create_scope();
     table.insert("o","o");
-    //table.print_all();
+    // table.print_all();
     table.search("o");
     table.search("a");
     table.delete_scope();
@@ -20,6 +20,25 @@ int main(){
     table.print_all();
     table.search("foo");
     table.search("j");
+    table.delete_scope();
+    table.delete_scope();
+    table.create_scope();
+    table.insert("5", "Number");
+    table.print_all();
+    table.remove("j");
+    table.remove("i");
+    table.print_all();
+    table.create_scope();
+    table.delete_scope();
+    table.create_scope();
+    table.insert("<=", "Relop");
+    table.insert("==", "Relop");
+    table.print_all();
+    table.delete_scope();
+    table.insert("t", "t");
+    table.insert("k", "k");
+    table.print_top();
+    table.print_all();
 
 
     /* scope_table stable(7, NULL);
@@ -29,12 +48,12 @@ int main(){
     stable.print(); */
 
     /* linked_list list;
-    list.insert("a", "a");
+    list.insert("a", "var");
     list.insert("o", "o");
     list.insert("d", "o");
     list.search("a")->print_node();
-    list.print(); */
-    cout<<"all ok"<<endl;
+    list.print();*/
+    cout<<"end of program"<<endl;
 
     return 0;
 }
