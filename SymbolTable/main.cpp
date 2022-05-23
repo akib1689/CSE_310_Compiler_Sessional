@@ -51,29 +51,60 @@ int main() {
     int n;
     input >> n;  // take the size from top line
     symbol_table table(n);
+    string error = "Error in file. please check the parameter number";
 
     while (getline(input, line)) {
         vector<string> params;
+        cout<<line<<endl;
         split_str(line, delim, params);
         if (params.size() > 0) {
             if (match_dictionary(params[0][0], instructions)
                     .compare("insert") == 0) {
-                cout << "insert";
+                //there should be 3 param field
+                if (params.size() == 3)
+                {
+                    table.insert(params[1], params[2]);
+                }else{
+                    cout<<error<<endl;
+                }
             } else if (match_dictionary(params[0][0], instructions)
                            .compare("lookup") == 0) {
-                cout << "lookup";
+                if (params.size() == 2)
+                {
+                    table.search(params[1]);
+                }else{
+                    cout<<error<<endl;
+                }
             } else if (match_dictionary(params[0][0], instructions)
                            .compare("delete") == 0) {
-                cout << "lookup";
+                if (params.size() == 2)
+                {
+                    table.remove(params[1]);
+                }else{
+                    cout<<error<<endl;
+                }
             } else if (match_dictionary(params[0][0], instructions)
                            .compare("print") == 0) {
-                cout << "print";
+                if (params.size() == 2)
+                {
+                    if (params[1].compare("A") == 0)
+                    {
+                        table.print_all();
+                    }else if (params[1].compare("C") == 0)
+                    {
+                        table.print_top();
+                    }else{
+                        cout<<error<<endl;
+                    }
+                }else{
+                    cout<<error<<endl;
+                }
             } else if (match_dictionary(params[0][0], instructions)
                            .compare("enter_scope") == 0) {
-                cout << "enter_scope";
+                table.create_scope();
             } else if (match_dictionary(params[0][0], instructions)
                            .compare("exit_scope") == 0) {
-                cout << "exit_scope";
+                table.delete_scope();
             }
         }
     }

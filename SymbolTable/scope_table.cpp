@@ -118,7 +118,7 @@ bool scope_table::insert(string name, string identifier) {
     if (index < 0) {
         // unsuccessful
         cout << "There is a variable with <" << name
-             << "> already in this scope";
+             << "> already in this scope"<<endl;
         return false;
     }
     // successful
