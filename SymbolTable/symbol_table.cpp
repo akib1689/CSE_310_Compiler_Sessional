@@ -41,7 +41,11 @@ symbol_table::symbol_table(int length) {
     this->top = new scope_table(length, NULL);
 }
 
-symbol_table::~symbol_table() { delete top; }
+symbol_table::~symbol_table() {
+    while (this->delete_scope()) {
+        // do nothing
+    }
+}
 
 //-----------dictionary function------------
 void symbol_table::insert(string name, string identifier) {
@@ -50,7 +54,7 @@ void symbol_table::insert(string name, string identifier) {
 
 symbol_info* symbol_table::search(string name) { top->search(name); }
 
-bool symbol_table::remove(string name) {}
+bool symbol_table::remove(string name) { top->remove(name); }
 
 //------------creation and deletion of scope-----------------
 /**
@@ -72,9 +76,10 @@ void symbol_table::create_scope() {
 bool symbol_table::delete_scope() {
     scope_table* new_top = this->top->get_parent();
     if (new_top == NULL) {
+        this->top->~scope_table();
         return false;
     }
-
+    this->top->~scope_table();
     this->top = new_top;
     return true;
 }

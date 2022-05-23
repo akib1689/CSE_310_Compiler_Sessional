@@ -6,6 +6,8 @@
         "unordered_map": "cpp",
         "vector": "cpp",
         "iosfwd": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "array": "cpp",
+        "new": "cpp"
     }
 }

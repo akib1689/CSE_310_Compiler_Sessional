@@ -8,9 +8,9 @@
 
 class linked_list {
    private:
-    symbol_info* head;                  //here this is interprated as tail of the list
+    symbol_info* head;  // here this is interprated as tail of the list
     int length;
-    void print_recur(symbol_info*);
+    void print_recur(symbol_info*, bool);
 
    public:
     linked_list();
@@ -18,6 +18,7 @@ class linked_list {
     //---------dictionary func----------------
     int insert(string, string);
     symbol_info* search(string);
+    int get_index(string);
     bool remove(string);
     int size();
 
@@ -32,6 +33,28 @@ linked_list::linked_list() {
 }
 
 linked_list::~linked_list() { delete this->head; }
+
+/**
+ * @brief to get the index of the symbol
+ * This function is used to get the symbol from the linked list from its name
+ *
+ * @param name      name of the symbol that's index is needed
+ * @return int      index of the symbol if present
+ * @return -1       if the symbol by this name is not present
+ */
+int linked_list::get_index(string name) {
+    symbol_info* temp = this->head;
+    int counter = length - 1;
+
+    while (temp != NULL) {
+        if (temp->get_name() == name) {
+            return counter;
+        }
+        temp = temp->get_next();
+        counter--;
+    }
+    return counter;
+}
 
 /**
  * @brief to insert a symbol
@@ -58,7 +81,7 @@ int linked_list::insert(string name, string identifier) {
 }
 
 /**
- * @brief 
+ * @brief
  * This function searchs from head to the last position of the list
  * @param name       name of the symbol that should be search
  */
@@ -106,17 +129,15 @@ bool linked_list::remove(string name) {
 int linked_list::size() { return this->length; }
 
 // print function
-void linked_list::print() {
-    this->print_recur(this->head);
-}
+void linked_list::print() { this->print_recur(this->head, false); }
 
-void linked_list::print_recur(symbol_info* current){
-    if (current->get_next() == NULL) {
-        current->print_node();
+void linked_list::print_recur(symbol_info* current, bool flag) {
+    if (current == NULL) {
         return;
     }
-
-    print_recur(current->get_next());
-    cout<<"--";
+    print_recur(current->get_next(), true);
     current->print_node();
+    if (flag) {
+        cout << "--";
+    }
 }

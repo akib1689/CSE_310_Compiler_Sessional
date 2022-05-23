@@ -20,11 +20,8 @@ void split_str(string &str, const char delim, vector<string> &out) {
 
 string match_dictionary(char instruction,
                         vector<pair<string, char> > dictionary) {
-    cout<<dictionary.size();
     for (int i = 0; i < dictionary.size(); i++) {
-        cout<<dictionary[i].second<<" "<<instruction;
         if (dictionary[i].second == instruction) {
-            cout<<"match found";
             return dictionary[i].first;
         }
     }
@@ -54,10 +51,30 @@ int main() {
     int n;
     input >> n;  // take the size from top line
     symbol_table table(n);
-  
+
     while (getline(input, line)) {
         vector<string> params;
         split_str(line, delim, params);
-        
+        if (params.size() > 0) {
+            if (match_dictionary(params[0][0], instructions)
+                    .compare("insert") == 0) {
+                cout << "insert";
+            } else if (match_dictionary(params[0][0], instructions)
+                           .compare("lookup") == 0) {
+                cout << "lookup";
+            } else if (match_dictionary(params[0][0], instructions)
+                           .compare("delete") == 0) {
+                cout << "lookup";
+            } else if (match_dictionary(params[0][0], instructions)
+                           .compare("print") == 0) {
+                cout << "print";
+            } else if (match_dictionary(params[0][0], instructions)
+                           .compare("enter_scope") == 0) {
+                cout << "enter_scope";
+            } else if (match_dictionary(params[0][0], instructions)
+                           .compare("exit_scope") == 0) {
+                cout << "exit_scope";
+            }
+        }
     }
 }

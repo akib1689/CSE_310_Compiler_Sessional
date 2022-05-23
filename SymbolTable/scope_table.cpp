@@ -17,7 +17,7 @@ class scope_table {
    private:
     string id;
     int length;
-    vector<linked_list> array;
+    linked_list* array;
     scope_table* parent;
     int child;
 
@@ -43,26 +43,28 @@ class scope_table {
 //------------------constructor---------------------------
 /**
  * @brief Construct a new scope table::scope table object
- * 
+ *
  * @param length    length of the bucket of the table
  * @param parent    parent to this table it is needed for maintaining stack
  */
 scope_table::scope_table(int length, scope_table* parent) {
     this->parent = parent;
     this->length = length;
+    this->array = new linked_list[length];
     this->child = 0;
     if (this->parent == NULL) {
         this->id = "1";
-    }else{
+    } else {
         parent->child++;
         this->id = parent->id + "." + to_string(parent->child);
     }
-    this->array.resize(length);
-    cout<<"New ScopeTable with id "<<this->id<<" created"<<endl;
+    cout << "New ScopeTable with id " << this->id << " created."<< endl;
 }
 
-scope_table::~scope_table() {}
-
+scope_table::~scope_table() {
+    delete (this->array);
+    cout << "ScopeTable with id " << this->id << " deleted."<< endl;
+}
 
 //--------------------private util function---------------------------
 /**
@@ -110,13 +112,15 @@ unsigned int scope_table::hash_value(string name) {
 bool scope_table::insert(string name, string identifier) {
     unsigned int hash_val = this->hash_value(name);
     int index = array[hash_val].insert(name, identifier);
-    if(index < 0){
-        //unsuccessful
-        cout<< "There is a variable with <" << name <<"> already in this scope";
+    if (index < 0) {
+        // unsuccessful
+        cout << "There is a variable with <" << name
+             << "> already in this scope";
         return false;
     }
-    //successful
-    cout<<"Inserted in Scopetable # "<< this->id << " at position "<<hash_val<<" , "<<index<<endl;
+    // successful
+    cout << "Inserted in Scopetable# " << this->id << " at position "
+         << hash_val << " , " << index << endl;
     return true;
 }
 
@@ -130,8 +134,21 @@ bool scope_table::insert(string name, string identifier) {
  * @return NULL             if the symbol is not found
  */
 symbol_info* scope_table::search(string name) {
-    unsigned int hash_val = this->hash_value(name);
-    return array[hash_val].search(name);
+    scope_table* current = this;
+    while (current != NULL) {
+        /* code */
+        unsigned int hash_val = current->hash_value(name);
+        symbol_info* cur_sym = current->array[hash_val].search(name);
+        int index = current->array[hash_val].get_index(name);
+        if(cur_sym != NULL && index >= 0){
+            cout<<"Found in ScopeTable# "<< current->id << " at position "
+                << hash_val<< " , " << index <<endl;
+            return cur_sym;
+        }
+        current = current->parent;
+    }
+    cout<<"Not found"<<endl;
+    return NULL;
 }
 
 /**
@@ -144,8 +161,21 @@ symbol_info* scope_table::search(string name) {
  * @return false    if the removal is unsuccessful (symbol is not present)
  */
 bool scope_table::remove(string name) {
-    unsigned int hash_val = this->hash_value(name);
-    return array[hash_val].remove(name);
+
+    scope_table* current = this;
+
+    while (current != NULL) {
+        /* code */
+        unsigned int hash_val = current->hash_value(name);
+        int index = array[hash_val].get_index(name);
+        if(array[hash_val].remove(name)){
+            cout<<"Removed from ScopeTable# "<< this->id << " at position "
+                << hash_val<< " , " << index <<endl;
+            return true;
+        }
+        current = this->parent;
+    }
+    return false;
 }
 
 //-------------getter--------------------------
@@ -153,7 +183,8 @@ scope_table* scope_table::get_parent() { return this->parent; }
 
 //-----------------print function--------------
 void scope_table::print() {
-    for (int i = 0; i < length; i++) {
+    cout<<"Scope Table# "<< this->id<<endl;
+    for (int i = 0; i < this->length; i++) {
         cout << i << "----";
         array[i].print();
         cout << endl;

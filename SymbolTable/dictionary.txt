@@ -1,4 +1,4 @@
-insert i
+insert I
 lookup L
 delete D
 print P
