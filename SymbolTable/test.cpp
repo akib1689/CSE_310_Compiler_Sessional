@@ -2,7 +2,7 @@
 #include "symbol_table.cpp"
 
 int main(){
-    symbol_table table(7);
+    /* symbol_table table(7);
     table.insert("a", "a");
     table.create_scope();
     table.insert("h","h");
@@ -38,7 +38,7 @@ int main(){
     table.insert("t", "t");
     table.insert("k", "k");
     table.print_top();
-    table.print_all();
+    table.print_all(); */
 
 
     /* scope_table stable(7, NULL);
@@ -51,8 +51,7 @@ int main(){
     list.insert("a", "var");
     list.insert("o", "o");
     list.insert("d", "o");
-    list.search("a")->print_node();
-    list.print();*/
+    list.print() */;
     cout<<"end of program"<<endl;
 
     return 0;

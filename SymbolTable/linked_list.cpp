@@ -32,7 +32,14 @@ linked_list::linked_list() {
     this->length = 0;
 }
 
-linked_list::~linked_list() { delete this->head; }
+linked_list::~linked_list() {
+    symbol_info* temp;
+    while (this->head != NULL) {
+        temp = this->head->get_next();
+        delete this->head;
+        this->head = temp;
+    }
+}
 
 /**
  * @brief to get the index of the symbol

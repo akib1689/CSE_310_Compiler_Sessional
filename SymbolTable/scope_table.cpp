@@ -62,7 +62,7 @@ scope_table::scope_table(int length, scope_table* parent) {
 }
 
 scope_table::~scope_table() {
-    delete (this->array);
+    delete [] (this->array);
     cout << "ScopeTable with id " << this->id << " deleted." << endl;
 }
 

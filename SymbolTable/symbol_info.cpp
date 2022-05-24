@@ -28,9 +28,7 @@ class symbol_info {
  * @param value the current value of the symbol (it is applicable to only variables)
 */
 symbol_info::symbol_info(string name, string identifier) {
-    this->name = new char;
     this->name = name;
-    this->identifier = new char;
     this->identifier = identifier;
     next = NULL;
 }
@@ -46,7 +44,7 @@ symbol_info::symbol_info(const symbol_info& that) {
 // destructor
 symbol_info::~symbol_info() {
     // patience
-    // don't do anything stupid 
+    // don't do anything stupid
  }
 
 // dictionary getter setter
