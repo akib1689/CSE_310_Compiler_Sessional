@@ -119,9 +119,11 @@ bool linked_list::remove(string name) {
             if (prev == NULL) {
                 // head is the symbol to delete
                 this->head = temp->get_next();
+                
             } else {
                 prev->set_next(temp->get_next());
             }
+            delete temp;
             this->length--;
             return true;
         }

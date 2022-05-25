@@ -52,9 +52,9 @@ void symbol_table::insert(string name, string identifier) {
     top->insert(name, identifier);
 }
 
-symbol_info* symbol_table::search(string name) { top->search(name); }
+symbol_info* symbol_table::search(string name) { return top->search(name); }
 
-bool symbol_table::remove(string name) { top->remove(name); }
+bool symbol_table::remove(string name) { return top->remove(name); }
 
 //------------creation and deletion of scope-----------------
 /**
@@ -75,11 +75,13 @@ void symbol_table::create_scope() {
  */
 bool symbol_table::delete_scope() {
     scope_table* new_top = this->top->get_parent();
+        delete this->top;
+
     if (new_top == NULL) {
-        this->top->~scope_table();
+        // this->top->~scope_table();
         return false;
     }
-    this->top->~scope_table();
+    // this->top->~scope_table();
     this->top = new_top;
     return true;
 }
