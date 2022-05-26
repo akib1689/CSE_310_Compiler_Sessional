@@ -1,5 +1,4 @@
 #include <iostream>
-#include <vector>
 
 #include "linked_list.cpp"
 
@@ -25,7 +24,7 @@ class scope_table {
     static unsigned long sdbm(string);
 
    public:
-    scope_table(int, scope_table* parent);
+    scope_table(int,int, scope_table*);
 
     //-------dictionary function----------
     bool insert(string, string);
@@ -47,13 +46,13 @@ class scope_table {
  * @param length    length of the bucket of the table
  * @param parent    parent to this table it is needed for maintaining stack
  */
-scope_table::scope_table(int length, scope_table* parent) {
+scope_table::scope_table(int length,int id, scope_table* parent) {
     this->parent = parent;
     this->length = length;
     this->array = new linked_list[length];
     this->child = 0;
     if (this->parent == NULL) {
-        this->id = "1";
+        this->id = to_string(id);
     } else {
         parent->child++;
         this->id = parent->id + "." + to_string(parent->child);

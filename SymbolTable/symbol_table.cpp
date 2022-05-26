@@ -1,5 +1,4 @@
 #include <iostream>
-#include <stack>
 
 #include "scope_table.cpp"
 
@@ -13,9 +12,11 @@ using namespace std;
 
 class symbol_table {
    private:
-    int length;  // length of bucket size of each table
+    int length;              // length of bucket size of each table
+    int global_scope_count;  // keeps track of the global scope
 
     scope_table* top;
+    void ensure_scope();
 
    public:
     symbol_table(int length);
@@ -35,26 +36,77 @@ class symbol_table {
 
     ~symbol_table();
 };
-
+/**
+ * @brief Construct a new symbol table::symbol table object
+ *
+ * @param length    the bucket size of all the scope hash table
+ */
 symbol_table::symbol_table(int length) {
     this->length = length;
-    this->top = new scope_table(length, NULL);
+    this->global_scope_count = 0;
+    this->ensure_scope();
 }
-
+/**
+ * @brief Destroy the symbol table::symbol table object
+ *
+ */
 symbol_table::~symbol_table() {
     while (this->delete_scope()) {
         // do nothing
     }
 }
 
-//-----------dictionary function------------
-void symbol_table::insert(string name, string identifier) {
-    top->insert(name, identifier);
+//------------private util function--------------
+/**
+ * @brief ensures that there is at least one scope (if the root directory is
+ * deleted and then some insert/ remove instruction is given)
+ *
+ */
+void symbol_table::ensure_scope() {
+    if (this->top == NULL) {
+        this->top = new scope_table(length, ++global_scope_count, NULL);
+    }
 }
 
-symbol_info* symbol_table::search(string name) { return top->search(name); }
-
-bool symbol_table::remove(string name) { return top->remove(name); }
+//-----------dictionary function------------
+/**
+ * @brief function to insert a symbol to the symbol table
+ * This function inserts the new symbol to the inner most scope
+ *
+ * @param name          name of the symbol
+ * @param identifier    type of symbol
+ */
+void symbol_table::insert(string name, string identifier) {
+    this->ensure_scope();
+    top->insert(name, identifier);
+}
+/**
+ * @brief function to search a symbol by name in the table
+ * This function searches the name at first in the inner most scope then
+ * gradually travarses to the top of the scope
+ *
+ * @param name              name of the symbol that is to be searched
+ * @return symbol_info*     the symbol_info type of object that is has this name
+ * @return null             if there is no symbol
+ */
+symbol_info* symbol_table::search(string name) {
+    this->ensure_scope();
+    return top->search(name);
+}
+/**
+ * @brief function to delete a symbol from the table
+ * This function searches the name at the inner most scope first the
+ * gradually traverses to the top of the scope
+ *
+ * @param name          name of the symbol that is to be deleted
+ * @return true         successful deletion
+ * @return false        otherwise (symbol was not found in that scope and any
+ * other parent scope)
+ */
+bool symbol_table::remove(string name) {
+    this->ensure_scope();
+    return top->remove(name);
+}
 
 //------------creation and deletion of scope-----------------
 /**
@@ -62,35 +114,51 @@ bool symbol_table::remove(string name) { return top->remove(name); }
  * This creates a scope and puts it at the top of the stack
  */
 void symbol_table::create_scope() {
-    scope_table* new_scope = new scope_table(length, this->top);
+    if (this->top == NULL) {
+        this->ensure_scope();
+        return;
+    }
+
+    scope_table* new_scope =
+        new scope_table(length, global_scope_count, this->top);
     this->top = new_scope;
 }
 /**
  * @brief this function removes the topmost element of the stack
  * innermost scope of the program. this is called whenever '}' braces appears
  *
- * @return true     if the deletion is successful
- * @return false    if the deletion is not successful (in case of the programmer
- * wants to delete the root scope)
+ * @return true     if the deletion is successful and there is a table left in
+ * the scope table
+ * @return false    if the root directory is deleted (in case of the programmer
+ * wants to delete the root scope or there is no scope to delete)
  */
 bool symbol_table::delete_scope() {
-    scope_table* new_top = this->top->get_parent();
-        delete this->top;
-
-    if (new_top == NULL) {
-        // this->top->~scope_table();
+    if (this->top == NULL) {
+        cout << "There is no scope to delete" << endl;
         return false;
     }
-    // this->top->~scope_table();
+
+    scope_table* new_top = this->top->get_parent();
+    delete this->top;
     this->top = new_top;
+    if (new_top == NULL) {
+        return false;
+    }
     return true;
 }
 
+//------------------print funciton-------------------------
 /**
  * @brief prints the inner most scope and that's varaiable
  *
  */
-void symbol_table::print_top() { this->top->print(); }
+void symbol_table::print_top() {
+    if (this->top == NULL) {
+        cout << "There is no scope to print" << endl;
+        return;
+    }
+    this->top->print();
+}
 /**
  * @brief this function prints all the scope that is currently active
  *
