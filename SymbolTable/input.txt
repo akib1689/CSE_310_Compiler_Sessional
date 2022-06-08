@@ -1,26 +1,53 @@
-7
-I foo FUNCTION
-I i VAR
-L foo
-L j
-I 5 NUMBER
-P A
-D j
-D i
+4
+D d
+I c a
+S
+D c
+D d
+D b
+D d
+I d c
+D b
 P A
 S
-I <= RELOP
-I == RELOP
-P A
-I <= RELOP
-I foo FUNCTION
-D ==
-P A
+D b
+S
+S
 E
-I t t
-I k k
+I b a
+I b b
 P A
+S
+P A
+D d
+P A
+I b c
+D a
+I a c
+D c
+I c a
+I d d
+I c a
+P A
+I a a
+I c b
+I d a
+D b
 E
+I b c
+I a a
 E
-P C
-I A A
+S
+P A
+P A
+I a a
+I a c
+E
+L d
+I b d
+D b
+I c b
+I b c
+E
+P A
+D a
