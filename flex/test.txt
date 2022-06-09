@@ -1,5 +1,0 @@
-this is a file
-and line number
-and another line
-end of file there is an if present in the file
-and there is also an else

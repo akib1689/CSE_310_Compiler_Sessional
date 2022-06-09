@@ -3,3 +3,7 @@
 /SymbolTable/test
 /SymbolTable/main
 /.vscode/
+/flex/lex.yy.c
+/flex/test.out
+/flex/token.txt
+/flex/log.txt
