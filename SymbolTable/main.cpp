@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "symbol_table.cpp"
+#include "symbol_table.h"
 
 using namespace std;
 

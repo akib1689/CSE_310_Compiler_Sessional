@@ -1,0 +1,2 @@
+Line no 4: TOKEN <IF> Lexeme IF found
+Line no 5: TOKEN <ELSE> Lexeme ELSE found
