@@ -1,5 +1,8 @@
 %option noyywrap yylineno
 
+%x string_state
+%x comment_state
+
 %{
 #include<stdio.h>
 #include<stdlib.h>
@@ -16,27 +19,89 @@ int line_count=1;
 * @return 	char* 		converted string
 * */
 char *strtoupper(char *str) {
+	char *p = new char;
 	for(int i=0;str[i]!='\0';i++)
 	{
 		if(str[i]>='a' && str[i]<='z')
 		{
-			str[i]=str[i]-32;
+			p[i]=str[i]-32;
+		}else{
+			p[i]=str[i];
 		}
 	}
-	return str;
+	return p;
+}
+/**
+* @brief 	function to convert the char litral to single char
+* @param 	char* str 	char in format 'char'
+* @return 	char* 		converted string
+*/
+char *char_to_single(char *str) {
+	char *p = new char;
+	p[0]=str[1];
+	p[1]='\0';
+	return p;
+}
+/**
+* @brief 	function to convert 
+*			the special char literal to individual special character
+* @param 	char* str 	char in format '\char'
+* @return 	char* 		converted corresponding char code
+*/
+char *special_to_char(char *str) {
+	char *p = new char;
+	switch(str[2]) {
+		case 'n':
+			p[0]='\n';
+			break;
+		case 't':
+			p[0]='\t';
+			break;
+		case '\\':
+			p[0]='\\';
+			break;
+		case '\'':
+			p[0]='\'';
+			break;
+		case 'a':
+			p[0]='\a';
+			break;
+		case 'f':
+			p[0]='\f';
+			break;
+		case 'r':
+			p[0]='\r';
+			break;
+		case 'b':
+			p[0]='\b';
+			break;
+		case 'v':
+			p[0]='\v';
+			break;
+		case '0':
+			p[0]='\0';
+			break;
+	}
+	p[1]='\0';
+	return p;
 }
 
 
 
 %}
 
-character [a-zA-Z]
+alpha [a-zA-Z]
+alpha_with_underscore [a-zA-Z_]
 digit [0-9]
 keyword if|else|for|while|do|break|int|char|float|double|void|return|switch|case|default|continue
 newline \n
 increment "++"|"--"
 relational "<"|">"|"<="|">="|"=="|"!="
 int_litral {digit}+
+float_litral {digit}*({digit}\.?|\.{digit}){digit}*([Ee][-+]?{digit}+)?
+char \'[ -~]\'
+special_char \'\\[\\nfratbv0\"\']\'
+identifier {alpha_with_underscore}({alpha_with_underscore}|{digit})*
 
 %%
 [ \t\v]+ {}
@@ -144,12 +209,50 @@ int_litral {digit}+
 	word_count=0;
 }
 {int_litral} {
+	/**
+	* todo		need to symboltable insert the int literal
+	*/
 	char* s=strtoupper(yytext);
 	printf("integer literal found %s\n", s);
 	fprintf(tokenout,"<CONST_INT, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <CONST_INT, %s> Lexeme %s found\n",line_count,s,yytext);
 }
-
+{float_litral} {
+	/**
+	* todo		need to symboltable insert the float literal
+	*/
+	char* s=strtoupper(yytext);
+	printf("float literal found %s\n", s);
+	fprintf(tokenout,"<CONST_FLOAT, %s>", s);
+	fprintf(logout,"Line no %d: TOKEN <CONST_FLOAT, %s> Lexeme %s found\n",line_count,s,yytext);
+}
+{char} {
+	/**
+	* todo		need to symboltable insert the char literal
+	*/
+	char* s=char_to_single(yytext);
+	printf("character literal found %s\n", s);
+	fprintf(tokenout,"<CONST_CHAR, %s>", s);
+	fprintf(logout,"Line no %d: TOKEN <CONST_CHAR, %s> Lexeme %s found\n",line_count,s,yytext);
+}
+{special_char} {
+	/**
+	* todo		need to symboltable insert the special char literal
+	*/
+	char* s=special_to_char(yytext);
+	printf("special character literal found %s\n", s);
+	fprintf(tokenout,"<CONST_CHAR, %s>", s);
+	fprintf(logout,"Line no %d: TOKEN <CONST_CHAR, %s> Lexeme %s found\n",line_count,s,yytext);
+}
+{identifier} {
+	/**
+	* todo		need to symboltable insert the identifier
+	*/
+	char* s=yytext;
+	printf("identifier found %s\n", s);
+	fprintf(tokenout,"<ID, %s>", s);
+	fprintf(logout,"Line no %d: TOKEN <ID, %s> Lexeme %s found\n",line_count,s,yytext);
+}
 <<EOF>> {
 	printf("Total Line Count: %d\n",line_count);
 	return 0;
