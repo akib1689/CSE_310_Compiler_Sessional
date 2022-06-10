@@ -15,6 +15,7 @@ char *str_to_store = NULL;
 
 int word_count=0;
 int line_count=1;
+int error_count=0;
 
 /**
 * @brief 	function to convert the lower case upper case
@@ -158,6 +159,7 @@ special_char \'\\[\\nfratbv0\']\'
 special_char_without_escape \\[\\nfratbv0\']
 char_litral {char}|{special_char}
 identifier {alpha_with_underscore}({alpha_with_underscore}|{digit})*
+comment_start "/*"|"//"
 
 
 %%
@@ -271,6 +273,7 @@ identifier {alpha_with_underscore}({alpha_with_underscore}|{digit})*
 	//reset the word_count
 	word_count=0;
 }
+
 {int_litral} {
 	/**
 	* todo		need to symboltable insert the int literal
@@ -321,25 +324,55 @@ identifier {alpha_with_underscore}({alpha_with_underscore}|{digit})*
 	/**
 	* todo		need to symboltable insert the string literal
 	*/
-	BEGIN INITIAL;
 	append_to_str(yytext);
 	char* s=remove_first_last();
 	printf("string terminator found %s\n", s);
 	fprintf(tokenout,"<STRING, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <STRING, %s> Lexeme %s found\n",line_count,s,str_to_store);
 	make_str_to_store_null();
+	word_count++;
+	BEGIN INITIAL;
 }
 <string_state>[\\] {
 	BEGIN string_escape_state;
 }
+<string_state><<EOF>> {
+	append_to_str(yytext);
+	error_count++;
+	printf("error found: Unfinished string st %s\n", str_to_store);
+	fprintf(logout,"Error at line no %d, %d: Unfinished string\n%s",line_count, word_count,str_to_store);
+	make_str_to_store_null();
+	BEGIN INITIAL;
+}
+<string_state>{newline} {
+	append_to_str(yytext);
+	error_count++;
+	printf("error found: Unfinished string st %s\n", str_to_store);
+	fprintf(logout,"Error at line no %d, %d: Unfinished string\n%s",line_count, word_count,str_to_store);
+	make_str_to_store_null();
+	line_count++;
+	word_count=0;
+	BEGIN INITIAL;
+}
 <string_state>. {
 	append_to_str(yytext);	
+	word_count++;
+}
+<string_escape_state>{newline} {
+	// this is used to only escape one character and go back to the original state
+	line_count++;
+	word_count=0;
+	printf("escaping new line");
+	BEGIN string_state;
 }
 <string_escape_state>. {
 	// this is used to only escape one character and go back to the original state
-	printf("escaping character: %s\n", yytext);
+	printf("escaping character: %d\n", (int)yytext[0]);
+	word_count++;
 	BEGIN string_state;
 }
+
+
 <<EOF>> {
 	printf("Total Line Count: %d\n",line_count);
 	return 0;
