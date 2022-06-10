@@ -1,9 +1,10 @@
 %option noyywrap yylineno
 
 %x string_state
-%x comment_state
+%x block_comment_state
+%x line_comment_state
 %x string_escape_state
-%x comment_escape_state
+%x line_comment_escape_state
 
 %{
 #include<bits/stdc++.h>
@@ -152,56 +153,72 @@ newline \r?\n
 increment "++"|"--"
 logic "&&"|"||"
 relational "<"|">"|"<="|">="|"=="|"!="
+line_comment_start "//"
+block_comment_start "/*"
+block_comment_end "*/"
 int_litral {digit}+
+too_many_decimals ({digit}*\.{digit}*\.{digit}*)+(\.{digit}*)*
+ill_formed_float {float_litral}+\.{int_litral}
 float_litral {digit}*({digit}\.?|\.{digit}){digit}*([Ee][-+]?{digit}+)?
+empty_char \'\'
+unfinished_char \'([ -~])?
+unfinished_special_char \'\\[\\nfratbv0\']
+unfinished_char_literal {unfinished_char}|{unfinished_special_char}
+multiple_char \'[ -~]{2,}\'
 char \'[ -~]\'
 special_char \'\\[\\nfratbv0\']\'
 special_char_without_escape \\[\\nfratbv0\']
 char_litral {char}|{special_char}
 identifier {alpha_with_underscore}({alpha_with_underscore}|{digit})*
-comment_start "/*"|"//"
-
+ill_formed_identifier {int_litral}{identifier}
 
 %%
 [ \t\v]+ {}
 
 [+-] {
+	word_count++;
 	char* s=strtoupper(yytext);
 	printf("additional operator found %s\n", s);
 	fprintf(tokenout,"<ADDOP, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <ADDOP, %s> Lexeme %s found\n",line_count,s,yytext);
 }
 [=] {
+	word_count++;
 	char* s=strtoupper(yytext);
 	printf("assignment operator found %s\n", s);
 	fprintf(tokenout,"<ASSIGNOP, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <ASSIGNOP, %s> Lexeme %s found\n",line_count,s,yytext);
 }
 [*/%] {
+	word_count++;
 	char* s=strtoupper(yytext);
 	printf("multiple operator found %s\n", s);
 	fprintf(tokenout,"<MULOP, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <MULOP, %s> Lexeme %s found\n",line_count,s,yytext);
 }
 [!] {
+	word_count++;
 	char* s=strtoupper(yytext);
 	printf("not operator found %s\n", s);
 	fprintf(tokenout,"<NOT, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <NOT, %s> Lexeme %s found\n",line_count,s,yytext);
 }
 [(] {
+	word_count++;
 	char* s=strtoupper(yytext);
 	printf("left parenthesis found %s\n", s);
 	fprintf(tokenout,"<LPAREN, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <LPAREN, %s> Lexeme %s found\n",line_count,s,yytext);
 }
 [)] {
+	word_count++;
 	char* s=strtoupper(yytext);
 	printf("right parenthesis found %s\n", s);
 	fprintf(tokenout,"<RPAREN, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <RPAREN, %s> Lexeme %s found\n",line_count,s,yytext);
 }
 [\{] {
+	word_count++;
 	/**
 	* todo		need to add the enter scope
 	*/
@@ -211,6 +228,7 @@ comment_start "/*"|"//"
 	fprintf(logout,"Line no %d: TOKEN <LCURL, %s> Lexeme %s found\n",line_count,s,yytext);
 }
 [\}] {
+	word_count++;
 	/**
 	* todo		need to add the exit scope
 	*/
@@ -220,48 +238,77 @@ comment_start "/*"|"//"
 	fprintf(logout,"Line no %d: TOKEN <RCURL, %s> Lexeme %s found\n",line_count,s,yytext);
 }
 [\[] {
+	word_count++;
 	char* s=strtoupper(yytext);
 	printf("left bracket found %s\n", s);
 	fprintf(tokenout,"<LTHIRD, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <LTHIRD, %s> Lexeme %s found\n",line_count,s,yytext);
 }
 [\]] {
+	word_count++;
 	char* s=strtoupper(yytext);
 	printf("right bracket found %s\n", s);
 	fprintf(tokenout,"<RTHIRD, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <RTHIRD, %s> Lexeme %s found\n",line_count,s,yytext);
 }
 [,] {
+	word_count++;
 	char* s=strtoupper(yytext);
 	printf("comma found %s\n", s);
 	fprintf(tokenout,"<COMMA, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <COMMA, %s> Lexeme %s found\n",line_count,s,yytext);
 }
 [;] {
+	word_count++;
 	char* s=strtoupper(yytext);
 	printf("semicolon found %s\n", s);
 	fprintf(tokenout,"<SEMICOLON, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <SEMICOLON, %s> Lexeme %s found\n",line_count,s,yytext);
 }
 {relational} {
+	word_count+=strlen(yytext);
 	char* s=strtoupper(yytext);
 	printf("relational operator found %s\n", s);
 	fprintf(tokenout,"<RELOP, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <RELOP, %s> Lexeme %s found\n",line_count,s,yytext);
 }
 {logic} {
+	word_count+=strlen(yytext);
 	char* s=strtoupper(yytext);
 	printf("logic operator found %s\n", s);
 	fprintf(tokenout,"<LOGICOP, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <LOGICOP, %s> Lexeme %s found\n",line_count,s,yytext);
 }
 {increment} {
+	word_count+=2;
 	char* s=strtoupper(yytext);
 	printf("incremental operator found %s\n", s);
 	fprintf(tokenout,"<INCOP, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <INCOP, %s> Lexeme %s found\n",line_count,s,yytext);
 }
+{empty_char} {
+	word_count++;
+	error_count++;
+	char * s = yytext;
+	printf("error found: Empty character %s\n", s);
+	fprintf(logout,"Error at line no %d, %d: Empty character: %s\n",line_count, word_count,s);
+}
+{unfinished_char_literal} {
+	word_count+=strlen(yytext);
+	error_count++;
+	char * s = yytext;
+	printf("error found: Unfinished character %s\n", s);
+	fprintf(logout,"Error at line no %d, %d: Unfinished character: %s\n",line_count, word_count,s);
+}
+{multiple_char} {
+	word_count+=strlen(yytext);
+	error_count++;
+	char * s = yytext;
+	printf("error found: Multiple character %s\n", s);
+	fprintf(logout,"Error at line no %d, %d: Multiple character: %s\n",line_count, word_count,s);
+}
 {keyword} {
+	word_count+=strlen(yytext);
 	char* s=strtoupper(yytext);
 	printf("keyword found %s\n", s);
 	fprintf(tokenout,"<%s>", s);
@@ -273,8 +320,8 @@ comment_start "/*"|"//"
 	//reset the word_count
 	word_count=0;
 }
-
 {int_litral} {
+	word_count+=strlen(yytext);
 	/**
 	* todo		need to symboltable insert the int literal
 	*/
@@ -284,6 +331,7 @@ comment_start "/*"|"//"
 	fprintf(logout,"Line no %d: TOKEN <CONST_INT, %s> Lexeme %s found\n",line_count,s,yytext);
 }
 {float_litral} {
+	word_count+=strlen(yytext);
 	/**
 	* todo		need to symboltable insert the float literal
 	*/
@@ -292,7 +340,23 @@ comment_start "/*"|"//"
 	fprintf(tokenout,"<CONST_FLOAT, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <CONST_FLOAT, %s> Lexeme %s found\n",line_count,s,yytext);
 }
+{too_many_decimals} {
+	word_count+=strlen(yytext);
+	error_count++;
+	char * s = yytext;
+	printf("error found: Too many decimals %s\n", s);
+	fprintf(logout,"Error at line no %d, %d: Too many decimals: %s\n",line_count, word_count,s);
+}
+{ill_formed_float} {
+	word_count+=strlen(yytext);
+	error_count++;
+	char * s = yytext;
+	printf("error found: Ill formed float %s\n", s);
+	fprintf(logout,"Error at line no %d, %d: ill formed floating number: %s\n",line_count, word_count,s);
+}
+
 {char_litral} {
+	word_count+=strlen(yytext);
 	/**
 	* todo		need to symboltable insert the char literal
 	*/
@@ -302,6 +366,7 @@ comment_start "/*"|"//"
 	fprintf(logout,"Line no %d: TOKEN <CONST_CHAR, %s> Lexeme %s found\n",line_count,s,yytext);
 }
 {identifier} {
+	word_count+=strlen(yytext);
 	/**
 	* todo		need to symboltable insert the identifier
 	*/
@@ -310,17 +375,35 @@ comment_start "/*"|"//"
 	fprintf(tokenout,"<ID, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <ID, %s> Lexeme %s found\n",line_count,s,yytext);
 }
+{ill_formed_identifier} {
+	word_count++;
+	error_count++;
+	char * s = yytext;
+	printf("error found: Ill formed identifier %s\n", s);
+	fprintf(logout,"Error at line no %d, %d: Invalid prefix on ID or invalid suffix on Number: %s\n",line_count, word_count,s);
+}
 [\"] {
+	word_count++;
 	BEGIN string_state;
 	append_to_str(yytext);
 }
+{line_comment_start} {
+	word_count+=2;
+	BEGIN line_comment_state;
+}
+{block_comment_start} {
+	word_count+=2;
+	BEGIN block_comment_state;
+}
 <string_state>{special_char_without_escape} {
+	word_count+=strlen(yytext);
 	char *s = add_space(yytext);
 	char *ptr = special_to_char(s);
 	append_to_str(ptr);
 	printf("special char found in string literal %s\n", s);
 }
 <string_state>[\"] {
+
 	/**
 	* todo		need to symboltable insert the string literal
 	*/
@@ -334,9 +417,11 @@ comment_start "/*"|"//"
 	BEGIN INITIAL;
 }
 <string_state>[\\] {
+	word_count++;
 	BEGIN string_escape_state;
 }
 <string_state><<EOF>> {
+	word_count++;
 	append_to_str(yytext);
 	error_count++;
 	printf("error found: Unfinished string st %s\n", str_to_store);
@@ -345,6 +430,7 @@ comment_start "/*"|"//"
 	BEGIN INITIAL;
 }
 <string_state>{newline} {
+	word_count++;
 	append_to_str(yytext);
 	error_count++;
 	printf("error found: Unfinished string st %s\n", str_to_store);
@@ -371,15 +457,71 @@ comment_start "/*"|"//"
 	word_count++;
 	BEGIN string_state;
 }
-
+<line_comment_state>{newline} {
+	printf("line comment found:\n%s\n", str_to_store);
+	fprintf(logout,"Line no %d: Comment found: %s\n",line_count,str_to_store);
+	make_str_to_store_null();
+	line_count++;
+	word_count=0;
+	BEGIN INITIAL;
+}
+<line_comment_state><<EOF>> {
+	printf("line comment found:\n%s\n", str_to_store);
+	fprintf(logout,"Line no %d: Comment found: %s\n",line_count,str_to_store);
+	make_str_to_store_null();
+	BEGIN INITIAL;
+}
+<line_comment_state>[\\] {
+	word_count++;
+	BEGIN line_comment_escape_state;
+}
+<line_comment_state>. {
+	word_count++;
+	append_to_str(yytext);
+}
+<line_comment_escape_state>{newline} {
+	line_count++;
+	word_count=0;
+	BEGIN line_comment_state;
+}
+<line_comment_escape_state>. {
+	BEGIN line_comment_state;
+	word_count++;
+}
+<block_comment_state>{newline} {
+	line_count++;
+	word_count=0;
+}
+<block_comment_state><<EOF>> {
+	error_count++;
+	printf("error found: Unfinished comment %s\n", str_to_store);
+	fprintf(logout,"Error at line no %d, %d: Unfinished comment\n\t%s\n",line_count, word_count,str_to_store);
+	make_str_to_store_null();
+	BEGIN INITIAL;
+}
+<block_comment_state>{block_comment_end} {
+	word_count++;
+	printf("block comment found:\n%s\n", str_to_store);
+	fprintf(logout,"Line no %d: Comment %s found\n",line_count,str_to_store);
+	make_str_to_store_null();
+	BEGIN INITIAL;
+}
+<block_comment_state>. {
+	word_count++;
+	append_to_str(yytext);
+}
 
 <<EOF>> {
-	printf("Total Line Count: %d\n",line_count);
+	fprintf(logout, "Total Line Count: %d\n",line_count);
+	fprintf(logout, "Total Error Count: %d\n",error_count);
 	return 0;
 }
 . {
 	//increasing the word_count to keep track of the position of the word
 	word_count++;
+	error_count++;
+	printf("error found: Unrecognized character %s\n", yytext);
+	fprintf(logout,"Error at line no %d, %d: Unrecognized character %s\n",line_count, word_count,yytext);
 }
 
 %%
