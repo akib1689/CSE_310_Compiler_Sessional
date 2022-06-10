@@ -2,13 +2,16 @@
 
 %x string_state
 %x comment_state
+%x string_escape_state
+%x comment_escape_state
 
 %{
-#include<stdio.h>
-#include<stdlib.h>
+#include<bits/stdc++.h>
+using namespace std;
 
 FILE *logout;
 FILE *tokenout;
+char *str_to_store = NULL;
 
 int word_count=0;
 int line_count=1;
@@ -32,24 +35,18 @@ char *strtoupper(char *str) {
 	return p;
 }
 /**
-* @brief 	function to convert the char litral to single char
-* @param 	char* str 	char in format 'char'
-* @return 	char* 		converted string
-*/
-char *char_to_single(char *str) {
-	char *p = new char;
-	p[0]=str[1];
-	p[1]='\0';
-	return p;
-}
-/**
 * @brief 	function to convert 
-*			the special char literal to individual special character
+*			the special formatted char literal to individual character
 * @param 	char* str 	char in format '\char'
 * @return 	char* 		converted corresponding char code
 */
 char *special_to_char(char *str) {
 	char *p = new char;
+	if	(str[1]!='\\'){
+		p[0]=str[1];
+		p[1]='\0';
+		return p;
+	}
 	switch(str[2]) {
 		case 'n':
 			p[0]='\n';
@@ -85,6 +82,62 @@ char *special_to_char(char *str) {
 	p[1]='\0';
 	return p;
 }
+/**
+* @brief 	function to add one space to the front of the string 
+*			copy the rest of the string afterwards
+* @param 	char* str 	string to add space to
+* @return 	char* 		converted string
+*/
+char *add_space(char *str) {
+	char *p = new char;
+	p[0]=' ';
+	p[1]='\0';
+	char *q = new char;
+	strcpy(q,str);
+	char *r = new char;
+	strcpy(r,p);
+	char *s = new char;
+	strcpy(s,r);
+	strcat(s,q);
+	return s;
+}
+/**
+* @brief 	function to append found char to the end of str_to_store
+* 			if word is found
+* @param 	char* str 	char to append after str_to_store
+*/
+void append_to_str(char *str) {
+	if(str_to_store==NULL)
+	{
+		str_to_store=new char[strlen(str)+1];
+		strcpy(str_to_store,str);
+	}else{
+		char *temp=new char[strlen(str_to_store)+strlen(str)+1];
+		strcpy(temp,str_to_store);
+		strcat(temp,str);
+		str_to_store=temp;
+	}
+}
+/**
+* @brief 	function to remove first and last from "str_to_store"
+*			and return the string
+* @return 	char* 		removed string
+*/
+char* remove_first_last() {
+	char *temp=new char[strlen(str_to_store)-2];
+	strcpy(temp,str_to_store+1);
+	temp[strlen(temp)-1]='\0';
+	return temp;
+}
+/**
+* @brief 	function to make the str_to_store NULL
+*/
+void make_str_to_store_null() {
+	if(str_to_store!=NULL)
+	{
+		str_to_store[0]='\0';
+	}
+}
 
 
 
@@ -94,14 +147,18 @@ alpha [a-zA-Z]
 alpha_with_underscore [a-zA-Z_]
 digit [0-9]
 keyword if|else|for|while|do|break|int|char|float|double|void|return|switch|case|default|continue
-newline \n
+newline \r?\n
 increment "++"|"--"
+logic "&&"|"||"
 relational "<"|">"|"<="|">="|"=="|"!="
 int_litral {digit}+
 float_litral {digit}*({digit}\.?|\.{digit}){digit}*([Ee][-+]?{digit}+)?
 char \'[ -~]\'
-special_char \'\\[\\nfratbv0\"\']\'
+special_char \'\\[\\nfratbv0\']\'
+special_char_without_escape \\[\\nfratbv0\']
+char_litral {char}|{special_char}
 identifier {alpha_with_underscore}({alpha_with_underscore}|{digit})*
+
 
 %%
 [ \t\v]+ {}
@@ -190,6 +247,12 @@ identifier {alpha_with_underscore}({alpha_with_underscore}|{digit})*
 	fprintf(tokenout,"<RELOP, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <RELOP, %s> Lexeme %s found\n",line_count,s,yytext);
 }
+{logic} {
+	char* s=strtoupper(yytext);
+	printf("logic operator found %s\n", s);
+	fprintf(tokenout,"<LOGICOP, %s>", s);
+	fprintf(logout,"Line no %d: TOKEN <LOGICOP, %s> Lexeme %s found\n",line_count,s,yytext);
+}
 {increment} {
 	char* s=strtoupper(yytext);
 	printf("incremental operator found %s\n", s);
@@ -226,21 +289,12 @@ identifier {alpha_with_underscore}({alpha_with_underscore}|{digit})*
 	fprintf(tokenout,"<CONST_FLOAT, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <CONST_FLOAT, %s> Lexeme %s found\n",line_count,s,yytext);
 }
-{char} {
+{char_litral} {
 	/**
 	* todo		need to symboltable insert the char literal
 	*/
-	char* s=char_to_single(yytext);
-	printf("character literal found %s\n", s);
-	fprintf(tokenout,"<CONST_CHAR, %s>", s);
-	fprintf(logout,"Line no %d: TOKEN <CONST_CHAR, %s> Lexeme %s found\n",line_count,s,yytext);
-}
-{special_char} {
-	/**
-	* todo		need to symboltable insert the special char literal
-	*/
 	char* s=special_to_char(yytext);
-	printf("special character literal found %s\n", s);
+	printf("character literal found %s\n", s);
 	fprintf(tokenout,"<CONST_CHAR, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <CONST_CHAR, %s> Lexeme %s found\n",line_count,s,yytext);
 }
@@ -253,6 +307,39 @@ identifier {alpha_with_underscore}({alpha_with_underscore}|{digit})*
 	fprintf(tokenout,"<ID, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <ID, %s> Lexeme %s found\n",line_count,s,yytext);
 }
+[\"] {
+	BEGIN string_state;
+	append_to_str(yytext);
+}
+<string_state>{special_char_without_escape} {
+	char *s = add_space(yytext);
+	char *ptr = special_to_char(s);
+	append_to_str(ptr);
+	printf("special char found in string literal %s\n", s);
+}
+<string_state>[\"] {
+	/**
+	* todo		need to symboltable insert the string literal
+	*/
+	BEGIN INITIAL;
+	append_to_str(yytext);
+	char* s=remove_first_last();
+	printf("string terminator found %s\n", s);
+	fprintf(tokenout,"<STRING, %s>", s);
+	fprintf(logout,"Line no %d: TOKEN <STRING, %s> Lexeme %s found\n",line_count,s,str_to_store);
+	make_str_to_store_null();
+}
+<string_state>[\\] {
+	BEGIN string_escape_state;
+}
+<string_state>. {
+	append_to_str(yytext);	
+}
+<string_escape_state>. {
+	// this is used to only escape one character and go back to the original state
+	printf("escaping character: %s\n", yytext);
+	BEGIN string_state;
+}
 <<EOF>> {
 	printf("Total Line Count: %d\n",line_count);
 	return 0;
@@ -261,6 +348,7 @@ identifier {alpha_with_underscore}({alpha_with_underscore}|{digit})*
 	//increasing the word_count to keep track of the position of the word
 	word_count++;
 }
+
 %%
 
 int main(int argc,char *argv[]){
