@@ -8,6 +8,7 @@
 
 %{
 #include<bits/stdc++.h>
+#include "../SymbolTable/symbol_table.h"
 using namespace std;
 
 FILE *logout;
@@ -17,6 +18,7 @@ char *str_to_store = NULL;
 int word_count=0;
 int line_count=1;
 int error_count=0;
+symbol_table table(7);
 
 /**
 * @brief 	function to convert the lower case upper case
@@ -145,6 +147,7 @@ void make_str_to_store_null() {
 
 %}
 
+whitespace [ \t\f\r\v]+ 
 alpha [a-zA-Z]
 alpha_with_underscore [a-zA-Z_]
 digit [0-9]
@@ -173,7 +176,7 @@ identifier {alpha_with_underscore}({alpha_with_underscore}|{digit})*
 ill_formed_identifier {int_litral}{identifier}
 
 %%
-[ \t\v]+ {}
+{whitespace} {}
 
 [+-] {
 	word_count++;
@@ -220,8 +223,9 @@ ill_formed_identifier {int_litral}{identifier}
 [\{] {
 	word_count++;
 	/**
-	* todo		need to add the enter scope
+	* done		need to add the enter scope
 	*/
+	table.create_scope();
 	char* s=strtoupper(yytext);
 	printf("left brace found %s\n", s);
 	fprintf(tokenout,"<LCURL, %s>", s);
@@ -230,8 +234,9 @@ ill_formed_identifier {int_litral}{identifier}
 [\}] {
 	word_count++;
 	/**
-	* todo		need to add the exit scope
+	* done need to add the exit scope
 	*/
+	table.delete_scope();
 	char* s=strtoupper(yytext);
 	printf("right brace found %s\n", s);
 	fprintf(tokenout,"<RCURL, %s>", s);
@@ -323,22 +328,24 @@ ill_formed_identifier {int_litral}{identifier}
 {int_litral} {
 	word_count+=strlen(yytext);
 	/**
-	* todo		need to symboltable insert the int literal
+	* done		need to symboltable insert the int literal
 	*/
 	char* s=strtoupper(yytext);
 	printf("integer literal found %s\n", s);
 	fprintf(tokenout,"<CONST_INT, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <CONST_INT, %s> Lexeme %s found\n",line_count,s,yytext);
+	table.insert(s, "CONST_INT");
 }
 {float_litral} {
 	word_count+=strlen(yytext);
 	/**
-	* todo		need to symboltable insert the float literal
+	* done		need to symboltable insert the float literal
 	*/
 	char* s=strtoupper(yytext);
 	printf("float literal found %s\n", s);
 	fprintf(tokenout,"<CONST_FLOAT, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <CONST_FLOAT, %s> Lexeme %s found\n",line_count,s,yytext);
+	table.insert(s, "CONST_FLOAT");
 }
 {too_many_decimals} {
 	word_count+=strlen(yytext);
@@ -358,22 +365,24 @@ ill_formed_identifier {int_litral}{identifier}
 {char_litral} {
 	word_count+=strlen(yytext);
 	/**
-	* todo		need to symboltable insert the char literal
+	* done		need to symboltable insert the char literal
 	*/
 	char* s=special_to_char(yytext);
 	printf("character literal found %s\n", s);
 	fprintf(tokenout,"<CONST_CHAR, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <CONST_CHAR, %s> Lexeme %s found\n",line_count,s,yytext);
+	table.insert(s, "CONST_CHAR");
 }
 {identifier} {
 	word_count+=strlen(yytext);
 	/**
-	* todo		need to symboltable insert the identifier
+	* done		need to symboltable insert the identifier
 	*/
 	char* s=yytext;
 	printf("identifier found %s\n", s);
 	fprintf(tokenout,"<ID, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <ID, %s> Lexeme %s found\n",line_count,s,yytext);
+	table.insert(s, "ID");
 }
 {ill_formed_identifier} {
 	word_count++;
@@ -405,7 +414,7 @@ ill_formed_identifier {int_litral}{identifier}
 <string_state>[\"] {
 
 	/**
-	* todo		need to symboltable insert the string literal
+	* done		need to symboltable insert the string literal
 	*/
 	append_to_str(yytext);
 	char* s=remove_first_last();
@@ -413,6 +422,7 @@ ill_formed_identifier {int_litral}{identifier}
 	fprintf(tokenout,"<STRING, %s>", s);
 	fprintf(logout,"Line no %d: TOKEN <STRING, %s> Lexeme %s found\n",line_count,s,str_to_store);
 	make_str_to_store_null();
+	table.insert(s, "STRING");
 	word_count++;
 	BEGIN INITIAL;
 }

@@ -79,7 +79,11 @@ void symbol_table::ensure_scope() {
  */
 void symbol_table::insert(string name, string identifier) {
     this->ensure_scope();
-    top->insert(name, identifier);
+    if (top->insert(name, identifier))     {
+        this->print_all();
+    }
+    
+    
 }
 /**
  * @brief function to search a symbol by name in the table

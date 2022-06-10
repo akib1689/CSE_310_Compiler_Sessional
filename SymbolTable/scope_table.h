@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+
 #include "linked_list.h"
 #include "symbol_info.h"
 
@@ -25,7 +26,7 @@ class scope_table {
     static unsigned long sdbm(string);
 
    public:
-    scope_table(int,int, scope_table*);
+    scope_table(int, int, scope_table*);
 
     //-------dictionary function----------
     bool insert(string, string);
@@ -41,7 +42,6 @@ class scope_table {
     ~scope_table();
 };
 
-
 //------------------constructor---------------------------
 /**
  * @brief Construct a new scope table::scope table object
@@ -49,7 +49,7 @@ class scope_table {
  * @param length    length of the bucket of the table
  * @param parent    parent to this table it is needed for maintaining stack
  */
-scope_table::scope_table(int length,int id, scope_table* parent) {
+scope_table::scope_table(int length, int id, scope_table* parent) {
     this->parent = parent;
     this->length = length;
     this->array = new linked_list[length];
@@ -64,7 +64,7 @@ scope_table::scope_table(int length,int id, scope_table* parent) {
 }
 
 scope_table::~scope_table() {
-    delete [] (this->array);
+    delete[](this->array);
     cout << "ScopeTable with id " << this->id << " deleted." << endl;
 }
 
@@ -120,7 +120,7 @@ bool scope_table::insert(string name, string identifier) {
     if (index < 0) {
         // unsuccessful
         cout << "There is a variable with <" << name
-             << "> already in this scope"<<endl;
+             << "> already in this scope" << endl;
         return false;
     }
     // successful
@@ -189,8 +189,10 @@ scope_table* scope_table::get_parent() { return this->parent; }
 void scope_table::print() {
     cout << "Scope Table# " << this->id << endl;
     for (int i = 0; i < this->length; i++) {
-        cout << i << "----";
-        array[i].print();
-        cout << endl;
+        if (this->array[i].size() > 0) {
+            cout << i << "---->";
+            array[i].print();
+            cout << endl;
+        }
     }
 }
