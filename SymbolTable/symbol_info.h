@@ -16,8 +16,8 @@ class symbol_info {
     string get_identifier();
     symbol_info* get_next();
     void set_next(symbol_info*);
-
     void print_node();
+    void print_node(FILE*);
 };
 
 
@@ -71,4 +71,9 @@ string symbol_info::get_identifier() { return this->identifier; }
 // function to print the node
 void symbol_info::print_node() {
     cout<<"<" << (this->name) << " : " << this->identifier << ">";
+}
+
+// finction to print the node in a file passed to the function
+void symbol_info::print_node(FILE *file) {
+    fprintf(file, "<%s : %s>", this->name.c_str(), this->identifier.c_str());
 }

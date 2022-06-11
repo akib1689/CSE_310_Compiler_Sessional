@@ -13,6 +13,7 @@ class linked_list {
     symbol_info* head;  // here this is interprated as tail of the list
     int length;
     void print_recur(symbol_info*, bool);
+    void print_recur(symbol_info*, FILE*, bool);
 
    public:
     linked_list();
@@ -22,9 +23,10 @@ class linked_list {
     symbol_info* search(string);
     int get_index(string);
     bool remove(string);
-    int size();
 
+    int size();
     void print();
+    void print(FILE*);
 
     ~linked_list();
 };
@@ -144,6 +146,10 @@ int linked_list::size() { return this->length; }
 // print function
 void linked_list::print() { this->print_recur(this->head, false); }
 
+// print function to print to file
+void linked_list::print(FILE *file) { this->print_recur(this->head, file, false); }
+
+// print function recursively
 void linked_list::print_recur(symbol_info* current, bool flag) {
     if (current == NULL) {
         return;
@@ -152,5 +158,17 @@ void linked_list::print_recur(symbol_info* current, bool flag) {
     current->print_node();
     if (flag) {
         cout << "--";
+    }
+}
+
+// print function recursively for file output
+void linked_list::print_recur(symbol_info* current, FILE* file, bool flag) {
+    if (current == NULL) {
+        return;
+    }
+    print_recur(current->get_next(), file, true);
+    current->print_node(file);
+    if (flag) {
+        fprintf(file, "--");
     }
 }

@@ -30,6 +30,7 @@ class scope_table {
 
     //-------dictionary function----------
     bool insert(string, string);
+    bool insert(string, string, FILE*);
     bool remove(string);
     symbol_info* search(string);
 
@@ -38,7 +39,7 @@ class scope_table {
 
     //-------print function---------------
     void print();
-
+    void print(FILE* out);
     ~scope_table();
 };
 
@@ -128,6 +129,31 @@ bool scope_table::insert(string name, string identifier) {
          << hash_val << " , " << index << endl;
     return true;
 }
+/**
+ * @brief this is the overloaded function of the insert function
+ * it is used to insert the symbol information in the table
+ *  also print the output to a file passed to the function
+ * 
+ * @param name          name of the symbol
+ * @param identifier    symbol type
+ * @param out           file pointer to the output file
+ * @return true         if successfully inserted to the table
+ * @return false        if already in the table
+ */
+bool scope_table::insert(string name, string identifier, FILE* out) {
+    unsigned int hash_val = scope_table::hash_value(name);
+    int index = array[hash_val].insert(name, identifier);
+    if (index < 0) {
+        // unsuccessful
+        fprintf(out, "\tThere is a variable with <%s> already in this scope\n",
+                name.c_str());
+        return false;
+    }
+    // successful
+    fprintf(out, "\tInserted in Scopetable# %s at position %d , %d\n",
+            this->id.c_str(), hash_val, index); 
+    return true;
+}
 
 /**
  * @brief searches the symbol in the table
@@ -193,6 +219,17 @@ void scope_table::print() {
             cout << i << "---->";
             array[i].print();
             cout << endl;
+        }
+    }
+}
+//---------------overloaded print funciton to print to file-----------------
+void scope_table::print(FILE* out) {
+    fprintf(out, "Scope Table# %s\n", this->id.c_str());
+    for (int i = 0; i < this->length; i++) {
+        if (this->array[i].size() > 0) {
+            fprintf(out, "%d --> ", i);
+            array[i].print(out);
+            fprintf(out, "\n");
         }
     }
 }

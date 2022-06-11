@@ -5,7 +5,7 @@
 /.vscode/
 /flex/lex.yy.c
 /flex/test.out
-/flex/token.txt
-/flex/log.txt
+/flex/1805086_token.txt
+/flex/1805086_log.txt
 /flex/test.txt
 /flex/hudai.c

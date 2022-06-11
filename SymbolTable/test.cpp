@@ -1,5 +1,5 @@
 #include<iostream>
-#include "symbol_table.cpp"
+#include "symbol_table.h"
 
 int main(){
     symbol_table table(7);

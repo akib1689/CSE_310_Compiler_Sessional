@@ -24,6 +24,9 @@ class symbol_table {
     void insert(string, string);
     symbol_info* search(string);
     bool remove(string);
+    //---------overloaded function-----------
+    void insert(string, string, FILE*);
+    void print_all(FILE*);
 
     //--------util function------------------
     void create_scope();
@@ -84,6 +87,20 @@ void symbol_table::insert(string name, string identifier) {
     }
     
     
+}
+//-----------overloaded function to print to file------------
+/**
+ * @brief the function is to insert a symbol to the symbol table
+ * This function inserts the new symbol to the inner most scope but it receives a file pointer to which the output is written
+ * @param name          name of the symbol
+ * @param identifier    type of symbol
+ * @param fp            file pointer to which the output is written
+ */
+void symbol_table::insert(string name, string identifier, FILE* fp) {
+    this->ensure_scope();
+    if (top->insert(name, identifier, fp))     {
+        this->print_all(fp);
+    }
 }
 /**
  * @brief function to search a symbol by name in the table
@@ -173,6 +190,20 @@ void symbol_table::print_all() {
     while (current != NULL) {
         current->print();
         cout << endl;
+        current = current->get_parent();
+    }
+}
+//----------overloaded print funciton to file-------------------------
+/**
+ * @brief this function prints all the scope and that's varaiable to the file
+ *
+ * @param fp    file pointer to which the output is written
+ */
+void symbol_table::print_all(FILE* fp) {
+    scope_table* current = this->top;
+    while (current != NULL) {
+        current->print(fp);
+        fprintf(fp, "\n");
         current = current->get_parent();
     }
 }
