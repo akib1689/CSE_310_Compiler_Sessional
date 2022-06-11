@@ -150,8 +150,6 @@ bool scope_table::insert(string name, string identifier, FILE* out) {
         return false;
     }
     // successful
-    fprintf(out, "\tInserted in Scopetable# %s at position %d , %d\n",
-            this->id.c_str(), hash_val, index); 
     return true;
 }
 
