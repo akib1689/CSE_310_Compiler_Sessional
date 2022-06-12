@@ -446,9 +446,15 @@ ill_formed_identifier {int_litral}{identifier}
 	append_to_str(p, yytext);
 	BEGIN string_state;
 }
-<string_escape_state>. {
+<string_escape_state>{special_char_without_escape} {
 	// this is used to only escape one character and go back to the original state
+	word_count+=strlen(yytext);
+	BEGIN string_state;
+}
+<string_escape_state>. {
+	//this in normal g++ compiler generates warning named unknown escape sequence
 	word_count++;
+	append_to_str(yytext, yytext);
 	BEGIN string_state;
 }
 <string_escape_state><<EOF>> {
