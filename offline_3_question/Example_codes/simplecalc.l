@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include "y.tab.h"
 
-extern double yylval;
+//extern double yylval;
 %}
 
 

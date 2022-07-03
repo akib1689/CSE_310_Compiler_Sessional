@@ -1,7 +1,7 @@
-/SymbolTable/main.exe
-/SymbolTable/test.exe
-/SymbolTable/test
-/SymbolTable/main
+/symbol_table/main.exe
+/symbol_table/test.exe
+/symbol_table/test
+/symbol_table/main
 /.vscode/
 /flex/lex.yy.c
 /flex/test.out
@@ -9,3 +9,7 @@
 /flex/1805086_log.txt
 /flex/test.txt
 /flex/hudai.c
+/offline_3_question/example_codes/lex.yy.c
+/offline_3_question/example_codes/y.o
+/offline_3_question/example_codes/y.tab.c
+/offline_3_question/example_codes/y.tab.h

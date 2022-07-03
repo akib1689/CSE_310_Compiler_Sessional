@@ -8,7 +8,7 @@
 
 %{
 #include<bits/stdc++.h>
-#include "../SymbolTable/symbol_table.h"
+#include "../symbol_table/symbol_table.h"
 using namespace std;
 
 FILE *logout;
@@ -21,143 +21,16 @@ int line_count=1;
 int error_count=0;
 symbol_table table(7);
 
-/**
-* @brief 	function to convert the lower case upper case
-* @param 	char* str 	string to convert
-* @return 	char* 		converted string
-* */
-char *strtoupper(char *str) {
-	char *p = new char;
-	for(int i=0;str[i]!='\0';i++)
-	{
-		if(str[i]>='a' && str[i]<='z')
-		{
-			p[i]=str[i]-32;
-		}else{
-			p[i]=str[i];
-		}
-	}
-	return p;
-}
-/**
-* @brief 	function to convert 
-*			the special formatted char literal to individual character
-* @param 	char* str 	char in format '\char'
-* @return 	char* 		converted corresponding char code
-*/
-char *special_to_char(char *str) {
-	char *p = new char;
-	if	(str[1]!='\\'){
-		p[0]=str[1];
-		p[1]='\0';
-		return p;
-	}
-	switch(str[2]) {
-		case 'n':
-			p[0]='\n';
-			break;
-		case 't':
-			p[0]='\t';
-			break;
-		case '\\':
-			p[0]='\\';
-			break;
-		case '\'':
-			p[0]='\'';
-			break;
-		case 'a':
-			p[0]='\a';
-			break;
-		case 'f':
-			p[0]='\f';
-			break;
-		case 'r':
-			p[0]='\r';
-			break;
-		case 'b':
-			p[0]='\b';
-			break;
-		case 'v':
-			p[0]='\v';
-			break;
-		case '0':
-			p[0]='\0';
-			break;
-	}
-	p[1]='\0';
-	return p;
-}
-/**
-* @brief 	function to add one space to the front of the string 
-*			copy the rest of the string afterwards
-* @param 	char* str 	string to add space to
-* @return 	char* 		converted string
-*/
-char *add_space(char *str) {
-	char *p = new char;
-	p[0]=' ';
-	p[1]='\0';
-	char *q = new char;
-	strcpy(q,str);
-	char *r = new char;
-	strcpy(r,p);
-	char *s = new char;
-	strcpy(s,r);
-	strcat(s,q);
-	return s;
-}
-/**
-* @brief 	function to append found char to the end of str_to_store
-* 			if word is found
-* @param 	char* str 			string to append after str_to_store
-* @param	char* given			string to append after original_str
-*/
-void append_to_str(char *str,char *given) {
-	if(str_to_store==NULL) {
-		str_to_store = new char;
-		strcpy(str_to_store,str);
-	}else{
-		strcat(str_to_store,str);
-	}
-	if(original_str==NULL) {
-		original_str = new char;
-		strcpy(original_str,given);
-	}else{
-		strcat(original_str,given);
-	}
-}
-/**
-* @brief 	function to remove first and last from "str_to_store"
-*			and return the string
-* @return 	char* 		removed string
-* ! deprecated function no longer in use
-*/
-/* char* remove_first_last() {
-	char *temp=new char[strlen(str_to_store)-2];
-	strcpy(temp,str_to_store+1);
-	temp[strlen(temp)-1]='\0';
-	return temp;
-} */
-/**
-* @brief 	function to make the str_to_store NULL
-*/
-void make_str_to_store_null() {
-	if(str_to_store!=NULL)
-	{
-		str_to_store[0]='\0';
-	}
-	if(original_str!=NULL)
-	{
-		original_str[0]='\0';
-	}
-}
-
-
+//------------function declaretion-------------------
+char* strtoupper(char*);
+void make_str_to_store_null();
+void append_to_str(char*,char*);
+char* add_space(char*);
+char* special_to_char(char*);
 
 %}
 
-whitespace [ \t\f\r\v]+ 
-alpha [a-zA-Z]
+whitespace [ \t\f\r\v]+
 alpha_with_underscore [a-zA-Z_]
 digit [0-9]
 keyword if|else|for|while|do|break|int|char|float|double|void|return|switch|case|default|continue
@@ -529,6 +402,137 @@ ill_formed_identifier {int_litral}{identifier}
 }
 
 %%
+
+/**
+* @brief 	function to convert the lower case upper case
+* @param 	char* str 	string to convert
+* @return 	char* 		converted string
+* */
+char *strtoupper(char *str) {
+	char *p = new char;
+	for(int i=0;str[i]!='\0';i++)
+	{
+		if(str[i]>='a' && str[i]<='z')
+		{
+			p[i]=str[i]-32;
+		}else{
+			p[i]=str[i];
+		}
+	}
+	return p;
+}
+/**
+* @brief 	function to convert 
+*			the special formatted char literal to individual character
+* @param 	char* str 	char in format '\char'
+* @return 	char* 		converted corresponding char code
+*/
+char *special_to_char(char *str) {
+	char *p = new char;
+	if	(str[1]!='\\'){
+		p[0]=str[1];
+		p[1]='\0';
+		return p;
+	}
+	switch(str[2]) {
+		case 'n':
+			p[0]='\n';
+			break;
+		case 't':
+			p[0]='\t';
+			break;
+		case '\\':
+			p[0]='\\';
+			break;
+		case '\'':
+			p[0]='\'';
+			break;
+		case 'a':
+			p[0]='\a';
+			break;
+		case 'f':
+			p[0]='\f';
+			break;
+		case 'r':
+			p[0]='\r';
+			break;
+		case 'b':
+			p[0]='\b';
+			break;
+		case 'v':
+			p[0]='\v';
+			break;
+		case '0':
+			p[0]='\0';
+			break;
+	}
+	p[1]='\0';
+	return p;
+}
+/**
+* @brief 	function to add one space to the front of the string 
+*			copy the rest of the string afterwards
+* @param 	char* str 	string to add space to
+* @return 	char* 		converted string
+*/
+char *add_space(char *str) {
+	char *p = new char;
+	p[0]=' ';
+	p[1]='\0';
+	char *q = new char;
+	strcpy(q,str);
+	char *r = new char;
+	strcpy(r,p);
+	char *s = new char;
+	strcpy(s,r);
+	strcat(s,q);
+	return s;
+}
+/**
+* @brief 	function to append found char to the end of str_to_store
+* 			if word is found
+* @param 	char* str 			string to append after str_to_store
+* @param	char* given			string to append after original_str
+*/
+void append_to_str(char *str,char *given) {
+	if(str_to_store==NULL) {
+		str_to_store = new char;
+		strcpy(str_to_store,str);
+	}else{
+		strcat(str_to_store,str);
+	}
+	if(original_str==NULL) {
+		original_str = new char;
+		strcpy(original_str,given);
+	}else{
+		strcat(original_str,given);
+	}
+}
+/**
+* @brief 	function to remove first and last from "str_to_store"
+*			and return the string
+* @return 	char* 		removed string
+* ! deprecated function no longer in use
+*/
+/* char* remove_first_last() {
+	char *temp=new char[strlen(str_to_store)-2];
+	strcpy(temp,str_to_store+1);
+	temp[strlen(temp)-1]='\0';
+	return temp;
+} */
+/**
+* @brief 	function to make the str_to_store NULL
+*/
+void make_str_to_store_null() {
+	if(str_to_store!=NULL)
+	{
+		str_to_store[0]='\0';
+	}
+	if(original_str!=NULL)
+	{
+		original_str[0]='\0';
+	}
+}
 
 int main(int argc,char *argv[]){
 	

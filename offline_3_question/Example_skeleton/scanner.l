@@ -25,7 +25,6 @@ digit [0-9]
 letter [A-Za-z]
 delim [ \t\r\f\v]
 newline \n
-ws [delim]+
 id (_|{letter})(_|{letter}|{digit})*
 integer {digit}+
 number {digit}*(\.{digit}+)?(E[+-]?{digit}+)?
