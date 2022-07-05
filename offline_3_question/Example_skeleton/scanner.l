@@ -83,10 +83,10 @@ MULOP [*/%]
 			yylval = (YYSTYPE)s;
 			return LOGICOP;
 		}
-"!"		{	return NOT; }
+"!"		{return NOT;}
 
 
-";" 	{ return SEMICOLON;}
+";" 	{return SEMICOLON;}
 "," 	{return COMMA;}
 "(" 	{return LPAREN;}
 ")" 	{return RPAREN;}

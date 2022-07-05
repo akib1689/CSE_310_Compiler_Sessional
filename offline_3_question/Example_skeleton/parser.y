@@ -25,12 +25,6 @@ void yyerror(char *s)
 
 %token IF ELSE FOR WHILE
 
-%left 
-%right
-
-%nonassoc 
-
-
 %%
 
 start : program
@@ -40,7 +34,7 @@ start : program
 	;
 
 program : program unit 
-	| unit
+	| unit 
 	;
 	
 unit : var_declaration

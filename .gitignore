@@ -13,3 +13,12 @@
 /offline_3_question/example_codes/y.o
 /offline_3_question/example_codes/y.tab.c
 /offline_3_question/example_codes/y.tab.h
+/bison/error.txt
+/bison/input.txt
+/bison/log.txt
+/bison/output.o
+/bison/lex.yy.c
+/bison/l.o
+/bison/y.o
+/bison/y.tab.c
+/bison/y.tab.h
