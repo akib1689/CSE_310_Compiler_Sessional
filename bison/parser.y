@@ -7,6 +7,7 @@ int yyparse(void);
 int yylex(void);
 extern FILE *yyin;
 extern int line_count;
+extern int error_count;
 FILE *fp;
 FILE *log_out;
 FILE *error_out;
@@ -31,7 +32,7 @@ void yyerror(char *s)
 %token <info> ADDOP MULOP RELOP LOGICOP CONST_INT CONST_CHAR CONST_FLOAT ID STRING
 
 %type <info> arguments logic_expression argument_list factor variable expression unary_expression 
-%type <info> program unit term
+%type <info> program unit term simple_expression rel_expression
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
@@ -193,34 +194,63 @@ variable : ID {
 	;
 	 
  expression : logic_expression {
-		cout<<"logic_expression found"<<endl;
+		$$ = $1;
+		fprintf(log_out, "Line %d - expression : logic_expression\n%s\n", line_count, $$->get_name().c_str());
  	}
 	| variable ASSIGNOP logic_expression {
+		// todo start working from here and go up to the top
 		cout<<"variable assignop logic_expression found"<<endl;
 	} 	
 	;
 
 logic_expression : rel_expression {
-		cout<<"rel_expression found"<<endl;
+		$$ = $1;
+		fprintf(log_out, "Line %d - logic_expression : rel_expression\n%s\n", line_count, $$->get_name().c_str());
 	}
 	| rel_expression LOGICOP rel_expression {
-		cout<<"logicop rel_expression found"<<endl;
+		string return_identifier = "CONST_INT";
+		string left_identifier = $1->get_identifier();
+		string right_identifier = $3->get_identifier();
+		string operator_name = $2->get_name();
+		if(left_identifier != "CONST_INT" || right_identifier != "CONST_INT"){
+			error_count++;
+			fprintf(log_out, "Error at line no: %d Relational operator can only be used with two integers\n", line_count);
+			fprintf(error_out, "Error at line no: %d Relational operator can only be used with two integers\n", line_count);
+			return_identifier = "ERROR";
+		}
+		string argument_name = $1->get_name() + $2->get_name() + $3->get_name();
+		$$ = new symbol_info(argument_name, return_identifier);
+		fprintf(log_out, "Line %d - logic_expression : rel_expression LOGICOP rel_expression\n%s\n", line_count, $$->get_name().c_str());
 	}
 	;
 			
 rel_expression	: simple_expression {
-		cout<<"simple_expression found"<<endl;
+		$$ = $1;
+		fprintf(log_out, "Line %d - rel_expression : simple_expression\n%s\n", line_count, $$->get_name().c_str());
 	}
 	| simple_expression RELOP simple_expression	{
-		cout<<"relop simple_expression found"<<endl;
+		string argument_name = $1->get_name() + $2->get_name() + $3->get_name();
+		string argument_identifier = "CONST_INT";
+		$$ = new symbol_info(argument_name, argument_identifier);
+		fprintf(log_out, "Line %d - rel_expression : simple_expression relop simple_expression\n%s\n", line_count, $$->get_name().c_str());
 	}
 	;
 				
 simple_expression : term {
-		cout<<"term found"<<endl;
+		$$ = $1;
+		fprintf(log_out, "Lind %d - simple_expression : term \n%s\n", line_count, $$->get_name().c_str());
 	} 
 	| simple_expression ADDOP term {
-		cout<<"addop term found"<<endl;
+		string argument_name = $1->get_name() + $2->get_name() + $3->get_name();
+		string argument_identifier = "int";
+		if($1->get_identifier() == "CONST_FLOAT"){
+			argument_identifier = "CONST_FLOAT";
+		} else if($3->get_identifier() == "CONST_FLOAT"){
+			argument_identifier = "CONST_FLOAT";
+		}
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+		fprintf(log_out, "Lind %d - simple_expression : simple_expression ADDOP term \n%s\n", line_count, $$->get_name().c_str());
 	}
 	;
 					
@@ -229,30 +259,87 @@ term :	unary_expression {
 		fprintf(log_out, "Line %d - term : unary_expression\n%s\n", line_count, $$->get_name().c_str());
 	}
     |  term MULOP unary_expression {
-		// todo : need to work here
+		string left_identifier = $1->get_identifier();
+		string right_identifier = $3->get_identifier();
+		string left_name = $1->get_name();
+		string right_name = $3->get_name();
+
+		string return_identifier = "ERROR";
+		string operator_name = $2->get_name();
+		switch(operator_name[0]){
+			case '*':
+				if(left_identifier == "CONST_FLOAT" || right_identifier == "CONST_FLOAT"){
+					return_identifier = "CONST_FLOAT";
+				} else {
+					return_identifier = "CONST_INT";
+				}
+				break;
+			case '/':
+				if(left_identifier == "CONST_FLOAT" || right_identifier == "CONST_FLOAT"){
+					return_identifier = "CONST_FLOAT";
+				} else {
+					return_identifier = "CONST_INT";
+				}
+				if(right_name == "0"){
+					error_count++;
+					fprintf(log_out, "Error at line no:%d - Division by zero\n", line_count);
+					fprintf(error_out, "Error at line no:%d - Division by zero\n", line_count);
+					return_identifier = "ERROR";
+				}
+				break;
+			case '%':
+				if(left_identifier != "CONST_INT" || right_identifier != "CONST_INT"){
+					error_count++;
+					fprintf(log_out, "Error at line no:%d \% operator can only be used with integers\n", line_count);
+					fprintf(error_out, "Error at line no:%d \% operator can only be used with integers\n", line_count);
+					return_identifier = "ERROR";
+				} else {
+					if(right_name == "0"){
+						error_count++;
+						fprintf(log_out, "Error at line no:%d \% operator can not be used with 0\n", line_count);
+						fprintf(error_out, "Error at line no:%d \% operator can not be used with 0\n", line_count);
+						return_identifier = "ERROR";
+					} else {
+						return_identifier = "CONST_INT";
+					}
+				}
+				break;
+			default:
+				return_identifier = "ERROR";
+				break;
+		}
+
+		string argument_name = left_name + operator_name + right_name;
+		$$ = new symbol_info(argument_name, return_identifier);
+		fprintf(log_out, "Line %d - term : term MULOP unary_expression\n%s\n", line_count, $$->get_name().c_str());
 	}
     ;
 
 unary_expression : ADDOP unary_expression {
-		cout<<"addop unary_expression found"<<endl;
+		string argument_name = $1->get_name() + $2->get_name();
+		string argument_identifier = $2->get_identifier();
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+		
+		fprintf(log_out, "Line %d - unary_expression : ADDOP unary_expression\n%s\n", line_count, $$->get_name().c_str());
 	} 
 	| NOT unary_expression {
 		string argument_name = "!" + $2->get_name();
 		string argument_identifier = $2->get_identifier();
 
 		$$ = new symbol_info(argument_name, argument_identifier);
-		fprintf(log_out, "Line %d - unary_expression : NOT unary_expression\n %s \n", line_count, $$->get_name().c_str());
+		fprintf(log_out, "Line %d - unary_expression : NOT unary_expression\n%s\n", line_count, $$->get_name().c_str());
 	} 
 	| factor {
 		$$ = $1;
-		fprintf(log_out, "Line %d - unary_expression : factor\n %s\n", line_count, $$->get_name().c_str());
+		fprintf(log_out, "Line %d - unary_expression : factor\n%s\n", line_count, $$->get_name().c_str());
 		
 	} 
 	;
 	
 factor	: variable {
 		$$ = $1;
-		fprintf(log_out, "Line %d - factor : variable\n %s\n", line_count, $$->get_name().c_str());
+		fprintf(log_out, "Line %d - factor : variable\n%s\n", line_count, $$->get_name().c_str());
 	}
 	| ID LPAREN argument_list RPAREN {
 		// todo : need to work here envolves error production
@@ -262,15 +349,15 @@ factor	: variable {
 		string argument_identifier = $2->get_identifier();
 
 		$$ = new symbol_info(argument_name, argument_identifier);
-		fprintf(log_out, "Line %d - factor : lparen expression rparen\n %s \n", line_count, $$->get_name().c_str());
+		fprintf(log_out, "Line %d - factor : lparen expression rparen\n%s\n", line_count, $$->get_name().c_str());
 	}
 	| CONST_INT {
 		$$ = yylval.info;
-		fprintf(log_out, "Line %d - factor : CONST_INT\n %s \n", line_count, $$->get_name().c_str());
+		fprintf(log_out, "Line %d - factor : CONST_INT\n%s\n", line_count, $$->get_name().c_str());
 	} 
 	| CONST_FLOAT {
 		$$ = yylval.info;
-		fprintf(log_out, "Line %d - factor : CONST_FLOAT\n %s \n", line_count, $$->get_name().c_str());
+		fprintf(log_out, "Line %d - factor : CONST_FLOAT\n%s\n", line_count, $$->get_name().c_str());
 	}
 	| variable INCOP {
 		string argument_name = $1->get_name() + "++";
@@ -278,7 +365,7 @@ factor	: variable {
 
 		$$ = new symbol_info(argument_name, argument_identifier);
 
-		fprintf(log_out, "Line %d - factor : variable INCOP\n %s \n", line_count, $1->get_name().c_str());
+		fprintf(log_out, "Line %d - factor : variable INCOP\n%s\n", line_count, $1->get_name().c_str());
 	}
 	| variable DECOP {
 		
@@ -287,16 +374,16 @@ factor	: variable {
 
 		$$ = new symbol_info(argument_name, argument_identifier);
 
-		fprintf(log_out, "Line %d - factor : variable DECOP\n %s\n", line_count, $$->get_name().c_str());
+		fprintf(log_out, "Line %d - factor : variable DECOP\n%s\n", line_count, $$->get_name().c_str());
 	};
 	
 argument_list : arguments {
 		$$ = $1;
-		fprintf(log_out, "Line %d - argument_list : arguments\n %s\n", line_count, $$->get_name().c_str());
+		fprintf(log_out, "Line %d - argument_list : arguments\n%s\n", line_count, $$->get_name().c_str());
 	}
 	| {
 		$$ = new symbol_info("", "void");
-		fprintf(log_out, "Line %d - argument_list : \n %s\n", line_count, $$->get_name().c_str());
+		fprintf(log_out, "Line %d - argument_list : \n%s\n", line_count, $$->get_name().c_str());
 	}
 	;
 	
@@ -308,11 +395,11 @@ arguments : arguments COMMA logic_expression {
 		//creating the new symbol_info
 		$$ = new symbol_info(argument_name, argument_identifier);
 		//log file output
-		fprintf(log_out, "Line %d - arguments : arguments COMMA logic_expression\n %s\n", line_count, $$->get_name().c_str());
+		fprintf(log_out, "Line %d - arguments : arguments COMMA logic_expression\n%s\n", line_count, $$->get_name().c_str());
 	}
 	| logic_expression {
 		$$ = $1;
-		fprintf(log_out, "Line: %d - arguments : logic_expression\n %s\n", line_count, $$->get_name().c_str());
+		fprintf(log_out, "Line: %d - arguments : logic_expression\n%s\n", line_count, $$->get_name().c_str());
 	}
 	;
 %%
