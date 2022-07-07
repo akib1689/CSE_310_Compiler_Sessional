@@ -28,7 +28,9 @@ void yyerror(char *s)
 
 %token IF ELSE FOR WHILE DO BREAK INT CHAR FLOAT DOUBLE VOID RETURN SWITCH CASE DEFAULT CONTINUE PRINTLN
 %token COMMA SEMICOLON LPAREN RPAREN LCURL RCURL LTHIRD RTHIRD NOT ASSIGNOP INCOP DECOP
-%token <symbol_info> ADDOP MULOP RELOP LOGICOP CONST_INT CONST_CHAR CONST_FLOAT ID STRING
+%token <info> ADDOP MULOP RELOP LOGICOP CONST_INT CONST_CHAR CONST_FLOAT ID STRING
+
+%type <info> arguments logic_expression argument_list factor variable
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
@@ -243,35 +245,61 @@ factor	: variable {
 		cout<<"function call detected"<<endl;
 	}
 	| LPAREN expression RPAREN {
-		cout<<"parenthesis expression found"<<endl;
+		string argument_name = "(" + $2->get_name() + ")";
+		string argument_identifier = $2->get_identifier();
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+		fprintf(log_out, "Line %d - factor : lparen expression rparen\n %s \n", line_count, $$->get_name().c_str());
 	}
 	| CONST_INT {
-		cout<<"constant int found"<<endl;
+		$$ = yylval.info;
+		fprintf(log_out, "Line %d - factor : CONST_INT\n %s \n", line_count, $$->get_name().c_str());
 	} 
 	| CONST_FLOAT {
-		cout<<"constant float found"<<endl;
+		$$ = yylval.info;
+		fprintf(log_out, "Line %d - factor : CONST_FLOAT\n %s \n", line_count, $$->get_name().c_str());
 	}
 	| variable INCOP {
-		cout<<"variable incop found"<<endl;
+		string argument_name = $1->get_name() + "++";
+		string argument_identifier = $1->get_identifier();
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+
+		fprintf(log_out, "Line %d - factor : variable INCOP\n %s \n", line_count, $1->get_name().c_str());
 	}
 	| variable DECOP {
-		cout<<"variable decop found"<<endl;
+		
+		string argument_name = $1->get_name() + "--";
+		string argument_identifier = $1->get_identifier();
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+
+		fprintf(log_out, "Line %d - factor : variable DECOP\n %s\n", line_count, $$->get_name().c_str());
 	};
 	
 argument_list : arguments {
-		cout<<"arguments found"<<endl;
+		$$ = $1;
+		fprintf(log_out, "Line %d - argument_list : arguments\n %s\n", line_count, $$->get_name().c_str());
 	}
 	| {
-		cout<<"empty argument list found"<<endl;
+		$$ = new symbol_info("", "void");
+		fprintf(log_out, "Line %d - argument_list : \n %s\n", line_count, $$->get_name().c_str());
 	}
 	;
 	
 arguments : arguments COMMA logic_expression {
-		cout<<"arguments comma logic_expression found"<<endl;
+		//preparing the new symbol_info for the argument
+		string argument_name = $1->get_name() + "," + $3->get_name();
+		string argument_identifier = $1->get_identifier() + "," + $3->get_identifier();
+
+		//creating the new symbol_info
+		$$ = new symbol_info(argument_name, argument_identifier);
+		//log file output
+		fprintf(log_out, "Line %d - arguments : arguments COMMA logic_expression\n %s\n", line_count, $$->get_name().c_str());
 	}
 	| logic_expression {
 		$$ = $1;
-		fprintf(log_out, "Line: %d - arguments : logic_expression\n %s", line_count, $$->get_name());
+		fprintf(log_out, "Line: %d - arguments : logic_expression\n %s\n", line_count, $$->get_name().c_str());
 	}
 	;
 %%
