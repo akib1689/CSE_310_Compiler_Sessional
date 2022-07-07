@@ -30,7 +30,8 @@ void yyerror(char *s)
 %token COMMA SEMICOLON LPAREN RPAREN LCURL RCURL LTHIRD RTHIRD NOT ASSIGNOP INCOP DECOP
 %token <info> ADDOP MULOP RELOP LOGICOP CONST_INT CONST_CHAR CONST_FLOAT ID STRING
 
-%type <info> arguments logic_expression argument_list factor variable
+%type <info> arguments logic_expression argument_list factor variable expression unary_expression 
+%type <info> program unit term
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
@@ -38,13 +39,17 @@ void yyerror(char *s)
 %%
 
 start : program {
-		//write your code in this block in all the similar blocks below
-		cout<<"program parsed"<<endl;
+		fprintf(log_out, "start : program\n");
 	}
 	;
 
 program : program unit {
-		cout<<"program unit found"<<endl;
+		/* string argument_name = $1->get_name() + "\n" + $2->get_name();
+		string argument_identifier = "program";
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+
+		fprintf(log_out, "Line %d - program : program unit\n%s\n", line_count, $$->get_name().c_str()); */
 
 	}
 	| unit {
@@ -220,10 +225,11 @@ simple_expression : term {
 	;
 					
 term :	unary_expression {
-		cout<<"unary_expression found"<<endl;
+		$$ = $1;
+		fprintf(log_out, "Line %d - term : unary_expression\n%s\n", line_count, $$->get_name().c_str());
 	}
     |  term MULOP unary_expression {
-		cout<<"mulop unary_expression found"<<endl;
+		// todo : need to work here
 	}
     ;
 
@@ -231,18 +237,25 @@ unary_expression : ADDOP unary_expression {
 		cout<<"addop unary_expression found"<<endl;
 	} 
 	| NOT unary_expression {
-		cout<<"not unary_expression found"<<endl;
+		string argument_name = "!" + $2->get_name();
+		string argument_identifier = $2->get_identifier();
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+		fprintf(log_out, "Line %d - unary_expression : NOT unary_expression\n %s \n", line_count, $$->get_name().c_str());
 	} 
 	| factor {
-		cout<<"factor found"<<endl;
+		$$ = $1;
+		fprintf(log_out, "Line %d - unary_expression : factor\n %s\n", line_count, $$->get_name().c_str());
+		
 	} 
 	;
 	
 factor	: variable {
-		cout<<"variable found"<<endl;
+		$$ = $1;
+		fprintf(log_out, "Line %d - factor : variable\n %s\n", line_count, $$->get_name().c_str());
 	}
 	| ID LPAREN argument_list RPAREN {
-		cout<<"function call detected"<<endl;
+		// todo : need to work here envolves error production
 	}
 	| LPAREN expression RPAREN {
 		string argument_name = "(" + $2->get_name() + ")";
