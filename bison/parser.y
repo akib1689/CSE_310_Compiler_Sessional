@@ -32,7 +32,7 @@ void yyerror(char *s)
 %token <info> ADDOP MULOP RELOP LOGICOP CONST_INT CONST_CHAR CONST_FLOAT ID STRING
 
 %type <info> arguments logic_expression argument_list factor variable expression unary_expression 
-%type <info> program unit term simple_expression rel_expression
+%type <info> program unit term simple_expression rel_expression expression_statement
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
@@ -178,18 +178,65 @@ statement : var_declaration {
 	;
 	  
 expression_statement : SEMICOLON {
-		cout<<"semicolon found"<<endl;
+		$$ = new symbol_info(";", "SEMICOLON");
 	}		
 	| expression SEMICOLON {
-		cout<<"expression semicolon found"<<endl;
+		string argument_name = $1->get_name() + ";";
+		string argument_identifier = "EXPRESSION_STATEMENT";
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+		fprintf(log_out, "Line %d - expression_statement : expression SEMICOLON\n%s\n", line_count, $$->get_name().c_str());
 	}
 	;
 
 variable : ID {
-		cout<<"variable id detected"<<endl;
+		symbol_info* current_symbol = table->search($1->get_name());
+
+		if(current_symbol == NULL){
+			// ! current symbol is not in the table
+			error_count++;
+			fprintf(log_out, "Error at line no: %d Variable - %s not declared", line_count, $1->get_name().c_str());
+			fprintf(error_out, "Error at line no: %d Variable - %s not declared", line_count, $1->get_name().c_str());
+
+			$$ = new symbol_info($1->get_name(), "ERROR");
+		} else {
+			if(current_symbol->is_array()) {
+				// ! current symbol is found in the table but it is an array so error
+				$$ = new symbol_info(current_symbol->get_name(), "ERROR", current_symbol->get_size());
+			} else {
+				// current symbol is found in the table and it is not an array so all okay
+				$$ = new symbol_info(current_symbol->get_name(), current_symbol->get_identifier());
+			}
+		}
+		fprintf(log_out, "Line %d - variable : ID\n%s\n",line_count, $$->get_name().c_str());
 	}
 	| ID LTHIRD expression RTHIRD {
-		cout<<"variable array detected"<<endl;
+		symbol_info* current_symbol = table->search($1->get_name());
+		if(current_symbol == NULL){
+			// ! current symbol is not in the table
+			error_count++;
+			fprintf(log_out, "Error at line no: %d Variable - %s not declared", line_count, $1->get_name().c_str());
+			fprintf(error_out, "Error at line no: %d Variable - %s not declared", line_count, $1->get_name().c_str());
+			string argument_name = $1->get_name() + "[" + $3->get_name() + "]";
+			$$ = new symbol_info(argument_name, "ERROR");
+		} else {
+			if(current_symbol->is_array()) {
+				// current symbol is found in the table and it is an array so all okay
+				if ($3->get_identifier() != "CONST_INT"){
+					// ! index is not an integer error
+					error_count++;
+					fprintf(log_out, "Error at line no: %d Array index is not an integer", line_count);
+					fprintf(error_out, "Error at line no: %d Array index is not an integer", line_count);
+				}
+				string argument_name = $1->get_name() + "[" + $3->get_name() + "]";
+				$$ = new symbol_info(argument_name, current_symbol->get_identifier());
+			} else {
+				// ! current symbol is found in the table and it is not an array so error
+				string argument_name = $1->get_name() + "[" + $3->get_name() + "]";
+				$$ = new symbol_info(argument_name, "ERROR");
+			}
+		}
+		fprintf(log_out, "Line %d - variable : ID LTHIRD expression RTHIRD\n%s\n",line_count, $$->get_name().c_str());
 	}
 	;
 	 
@@ -198,10 +245,39 @@ variable : ID {
 		fprintf(log_out, "Line %d - expression : logic_expression\n%s\n", line_count, $$->get_name().c_str());
  	}
 	| variable ASSIGNOP logic_expression {
-		// todo start working from here and go up to the top
-		symbol_info left = $1;
-		symbol_info right = $3;
-		
+		symbol_info* left = $1;
+		symbol_info* right = $3;
+
+		if (left->get_identifier() != right->get_identifier()) {
+			// error
+			if (left->get_identifier() == "ERROR" || right->get_identifier() == "ERROR") {
+				if (left->is_array() || right->is_array()) {
+					// error
+					error_count++;
+					if(left->is_array()){
+						fprintf(log_out, "Error at line no: %d Type mismatch, %s is an array\n", line_count, left->get_name().c_str());
+						fprintf(error_out, "Error at line no: %d Type mismatch, %s is an array\n", line_count, left->get_name().c_str());
+					}else{
+						fprintf(log_out, "Error at line no: %d Type mismatch, %s is an array\n", line_count, right->get_name().c_str());
+						fprintf(error_out, "Error at line no: %d Type mismatch, %s is an array\n", line_count, right->get_name().c_str());
+					}
+				} 
+			} else if (left->get_identifier() == "CONST_FLOAT" && right->get_identifier() == "CONST_INT") {
+				// do nothing
+			} else {
+				// error
+				error_count++;
+				fprintf(log_out, "Error at line no: %d Type mismatch, %s is not of type %s\n", line_count, left->get_name().c_str(), right->get_name().c_str());
+				fprintf(error_out, "Error at line no: %d Type mismatch, %s is not of type %s\n", line_count, left->get_name().c_str(), right->get_name().c_str());
+			}
+		}
+
+		string argument_name = left->get_name() + " = " + right->get_name();
+		string argument_identifier = "EXPRESSION";
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+		fprintf(log_out, "Line %d - expression : variable ASSIGNOP logic_expression\n%s\n", line_count, $$->get_name().c_str());
+
 	} 	
 	;
 
@@ -244,7 +320,7 @@ simple_expression : term {
 	} 
 	| simple_expression ADDOP term {
 		string argument_name = $1->get_name() + $2->get_name() + $3->get_name();
-		string argument_identifier = "int";
+		string argument_identifier = "CONST_INT";
 		if($1->get_identifier() == "CONST_FLOAT"){
 			argument_identifier = "CONST_FLOAT";
 		} else if($3->get_identifier() == "CONST_FLOAT"){
