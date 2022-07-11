@@ -6,7 +6,7 @@
 #include <vector>
 using namespace std;
 
-/*
+/**
  * Node class to store the symbol info
  */
 class symbol_info {
@@ -15,8 +15,8 @@ class symbol_info {
     string name;
     string identifier;
 
-    int size;       // defined for array
-    bool defined;
+    int size;               // defined for array
+    bool defined;           // defined for funciton
     vector<param> params;   // defined for function
 
    public:
@@ -45,7 +45,7 @@ class symbol_info {
     }
     /** constructor for function
      * @param name name of the symbol
-     * @param identifier the type of symbol 
+     * @param identifier the type of symbol (this works as return type of the function)
      * @param params the parameters of the function
     */
     symbol_info(string name, string identifier, vector<param> params) {
@@ -76,9 +76,6 @@ class symbol_info {
 
     // dictionary getter setter
 
-    /** function to set the next node of this node
-     * @param next the node that is next to this node
-     */
     void set_next(symbol_info* next) { this->next = next; }
 
     void set_defined(bool defined) { this->defined = defined; }
@@ -100,10 +97,10 @@ class symbol_info {
     int get_size() {return this->size;}
 
 
-    int total_params() {return this->params.size();}
+    int get_param_count() {return this->params.size();}
 
-    void add_param(string name, string identifier) {
-        this->params.push_back(param(name, identifier));
+    void add_param(string name, string type) {
+        this->params.push_back(param(name, type));
     }
 
     vector<param> get_params() {return this->params;}

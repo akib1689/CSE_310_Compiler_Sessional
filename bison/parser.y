@@ -22,6 +22,9 @@ symbol_table table(7);
 void yyerror(char *s)
 {
 	//write your code
+	error_count++;
+	fprintf(log_out, "Error at line %d: %s\n\n", line_count, s);
+	fprintf(error_out, "Error at line no: %d - \"%s\"\n\n", line_count, s);
 }
 
 
@@ -37,7 +40,7 @@ void yyerror(char *s)
 
 %type <info> arguments logic_expression argument_list factor variable expression unary_expression 
 %type <info> program unit term simple_expression rel_expression expression_statement statement statements
-%type <info> var_declaration compound_statement declaration_list type_specifier parameter_list
+%type <info> var_declaration compound_statement declaration_list type_specifier parameter_list func_definition func_declaration
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
@@ -45,49 +48,276 @@ void yyerror(char *s)
 %%
 
 start : program {
-		fprintf(log_out, "start : program\n");
+		fprintf(log_out, "start : program\n\n");
 	}
 	;
 
 program : program unit {
-		/* string argument_name = $1->get_name() + "\n" + $2->get_name();
+		string argument_name = $1->get_name() + "\n" + $2->get_name();
 		string argument_identifier = "program";
 
 		$$ = new symbol_info(argument_name, argument_identifier);
 
-		fprintf(log_out, "Line %d - program : program unit\n\n%s\n\n", line_count, $$->get_name().c_str()); */
+		fprintf(log_out, "Line %d - program : program unit\n\n%s\n\n", line_count, $$->get_name().c_str());
 
 	}
 	| unit {
-		cout<<"unit found"<<endl;
+		// cout<<"unit found"<<endl;
+		$$ = $1;
+		fprintf(log_out, "Line %d - program : unit\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
 	;
 	
 unit : var_declaration {
-		cout<<"var_declaration found"<<endl;
+		// cout<<"var_declaration found"<<endl;
+		$$ = $1;
+		fprintf(log_out, "Line %d - unit : var_declaration\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
     | func_declaration {
-		cout<<"func_declaration found"<<endl;
+		// cout<<"func_declaration found"<<endl;
+		$$ = $1;
+		fprintf(log_out, "Line %d - unit : func_declaration\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
     | func_definition {
-		cout<<"func_definition found"<<endl;
+		// cout<<"func_definition found"<<endl;
+		$$ = $1;
+		fprintf(log_out, "Line %d - unit : func_definition\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
     ;
      
 func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON {
-		cout<<"type_specifier id lparen parameter_list rparen semicolon found"<<endl;
+		// cout<<"type_specifier id lparen parameter_list rparen semicolon found"<<endl;
+		string func_ret_type = $1->get_name();
+		string func_name = $2->get_name();
+
+		vector<param> func_param_list = get_param_type_list($4->get_name());
+		symbol_info* temp_func = table.search(func_name);
+		if(temp_func != NULL) {
+			// ! function already declared and cannot be redeclared
+			error_count++;
+			fprintf(log_out, "Error at line no:%d Function %s already declared\n\n", line_count, func_name.c_str());
+			fprintf(error_out, "Error at line no:%d Function %s already declared\n\n", line_count, func_name.c_str());
+		}
+		else {
+			// okay function not declared and can be declared
+			symbol_info *temp_func = new symbol_info(func_name, func_ret_type, func_param_list);
+			// set the definition flag to false
+			temp_func->set_defined(false);
+			table.insert(temp_func);
+		}
+
+		string argument_name = $1->get_name() + " " + $2->get_name() + "(" + $4->get_name() + ");";
+		string argument_identifier = "func_declaration";
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+		fprintf(log_out, "Line %d - func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
 	| type_specifier ID LPAREN RPAREN SEMICOLON {
-		cout<<"type_specifier id lparen rparen semicolon found"<<endl;
+		// cout<<"type_specifier id lparen rparen semicolon found"<<endl;
+		string func_ret_type = $1->get_name();
+		string func_name = $2->get_name();
+
+		vector<param> func_param_list;
+		symbol_info* temp_func = table.search(func_name);
+		if(temp_func != NULL) {
+			// ! function already declared and cannot be redeclared
+			error_count++;
+			fprintf(log_out, "Error at line no:%d Function %s already declared\n\n", line_count, func_name.c_str());
+			fprintf(error_out, "Error at line no:%d Function %s already declared\n\n", line_count, func_name.c_str());
+		}
+		else {
+			// okay function not declared and can be declared
+			symbol_info *temp_func = new symbol_info(func_name, func_ret_type, func_param_list);
+			// set the definition flag to false
+			temp_func->set_defined(false);
+			table.insert(temp_func);
+		}
+
+		string argument_name = $1->get_name() + " " + $2->get_name() + "();";
+		string argument_identifier = "func_declaration";
+		$$ = new symbol_info(argument_name, argument_identifier);
+		fprintf(log_out, "Line %d - func_declaration : type_specifier ID LPAREN RPAREN SEMICOLON\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
 	;
 		 
-func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement {
-		cout<<"type_specifier id lparen parameter_list rparen compound_statement found"<<endl;
+func_definition : type_specifier ID LPAREN parameter_list RPAREN {
+	// this is called after finding the ) in the function declaration and before the {
+		string func_ret_type = $1->get_name();
+		string func_name = $2->get_name();
+		vector<param> func_param_list = get_param_list($4->get_name());
+		current_function_ret_type = func_ret_type;
+		current_function_name = func_name;
+
+		symbol_info* temp_func = table.search(func_name);
+		if(temp_func != NULL){
+			// function already declared
+			if(temp_func->is_function()){
+				// function is declared as a function
+				if(temp_func->is_defined()){
+					// ! function alredy defined cannot be defined again
+					error_count++;
+					fprintf(log_out, "Error at line no:%d Function \"%s\" already defined\n\n", line_count, func_name.c_str());
+					fprintf(error_out, "Error at line no:%d Function \"%s\" already defined\n\n", line_count, func_name.c_str());
+				} else {
+					// okay function is declared as a function but not defined 
+					bool definition_matched = true;
+					int declared_param_count = temp_func->get_param_count();
+					int definition_param_count = func_param_list.size();
+					// check if the function definition has the same number of parameters
+					if(declared_param_count != definition_param_count){
+						// ! function definition has different number of parameters
+						error_count++;
+						fprintf(log_out, "Error at line no:%d Function \"%s\" has different number of parameters\n\n", line_count, func_name.c_str());
+						fprintf(error_out, "Error at line no:%d Function \"%s\" has different number of parameters\n\n", line_count, func_name.c_str());
+						definition_matched = false;
+					} else {
+						vector<param> declared_param_list = temp_func->get_params();
+						for(int i = 0; i < declared_param_count; i++){
+							if(declared_param_list[i].get_type() != func_param_list[i].get_type()){
+								// ! function definition has different parameter types
+								error_count++;
+								fprintf(log_out, "Error at line no:%d Function \"%s\" has different parameter types\n\n", line_count, func_name.c_str());
+								fprintf(error_out, "Error at line no:%d Function \"%s\" has different parameter types\n\n", line_count, func_name.c_str());
+								definition_matched = false;
+							}
+							
+						}
+					}
+					if(func_ret_type != temp_func->get_identifier()){
+						// ! function definition has different return type
+						error_count++;
+						fprintf(log_out, "Error at line no:%d Function \"%s\" has different return type\n\n", line_count, func_name.c_str());
+						fprintf(error_out, "Error at line no:%d Function \"%s\" has different return type\n\n", line_count, func_name.c_str());
+						definition_matched = false;
+					}
+					// if the function definition matches the declaration then 
+					// remove the function from the symbol table and add it again with the definition
+					if(definition_matched){
+						table.remove(func_name);
+						temp_func = new symbol_info(func_name, func_ret_type, func_param_list);
+						table.insert(temp_func);
+					}
+					// set the fundtion as defined
+					temp_func->set_defined(true);
+
+					// enter to the function scope
+					table.create_scope();
+					// add the parameters to the symbol table
+					for(int i = 0; i < func_param_list.size(); i++){
+						string param_name = func_param_list[i].get_name();
+						string param_type = func_param_list[i].get_type();
+						bool result = table.insert(new symbol_info(param_name, param_type));
+
+						if(!result){
+							// ! function parameter already declared
+							error_count++;
+							fprintf(log_out, "Error at line no:%d Function parameter \"%s\" already declared\n\n", line_count, param_name.c_str());
+							fprintf(error_out, "Error at line no:%d Function parameter \"%s\" already declared\n\n", line_count, param_name.c_str());
+						}
+					}
+				}
+			} else {
+				// ! function is not declared as a function but is already declared
+				// we will enter scope no matter what and treat this as a function
+				table.create_scope();
+				error_count++;
+				fprintf(log_out, "Error at line no:%d Function \"%s\" already declared but not as Function\n\n", line_count, func_name.c_str());
+				fprintf(error_out, "Error at line no:%d Function \"%s\" already declared but not as Function\n\n", line_count, func_name.c_str());
+			}
+		} else {
+			// function is not declared okay
+			symbol_info* temp_func = new symbol_info(func_name, func_ret_type, func_param_list);
+			temp_func->set_defined(true);
+			table.insert(temp_func);
+			// enter to the function scope
+			table.create_scope();
+			// add the parameters to the symbol table
+			for(int i = 0; i < func_param_list.size(); i++){
+				string param_name = func_param_list[i].get_name();
+				string param_type = func_param_list[i].get_type();
+				bool result = table.insert(new symbol_info(param_name, param_type));
+
+				if(!result){
+					// ! function parameter already declared
+					error_count++;
+					fprintf(log_out, "Error at line no:%d Function parameter \"%s\" already declared\n\n", line_count, param_name.c_str());
+					fprintf(error_out, "Error at line no:%d Function parameter \"%s\" already declared\n\n", line_count, param_name.c_str());
+				}
+			}
+		}
+
+	} compound_statement {
+		string argument_name = $1->get_name() + " " + $2->get_name() + "(" + $4->get_name() + ")" + $7->get_name();
+		string argument_identifier = "function_definition";
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+		fprintf(log_out, "Line no:%d - function definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement\n\n%s\n\n", line_count, argument_name.c_str());
 	}
-	| type_specifier ID LPAREN RPAREN compound_statement {
-		cout<<"type_specifier id lparen rparen compound_statement found"<<endl;
-		// * done upto here * //
+	| type_specifier ID LPAREN RPAREN {
+		string func_ret_type = $1->get_name();
+		string func_name = $2->get_name();
+		vector<param> func_param_list;
+
+		symbol_info* temp_func = table.search(func_name);
+		if(temp_func != NULL){
+			// function is already declared
+			if(temp_func->is_function()){
+				// function is already declared as a function
+				if(temp_func->is_defined()){
+					// ! function is already defined and cannot be redefined
+					error_count++;
+					fprintf(log_out, "Error at line no:%d Function \"%s\" already defined\n\n", line_count, func_name.c_str());
+					fprintf(error_out, "Error at line no:%d Function \"%s\" already defined\n\n", line_count, func_name.c_str());
+				} else {
+					// function is declared as a function but not defined
+					bool definition_matched = true;
+					int declared_param_count = temp_func->get_param_count();
+					int definition_param_count = func_param_list.size();
+					// check if the function definition has the same number of parameters
+					if(declared_param_count != definition_param_count){
+						// ! function definition has different number of parameters
+						error_count++;
+						fprintf(log_out, "Error at line no:%d Function \"%s\" has different number of parameters\n\n", line_count, func_name.c_str());
+						fprintf(error_out, "Error at line no:%d Function \"%s\" has different number of parameters\n\n", line_count, func_name.c_str());
+						definition_matched = false;
+					}
+					if(func_ret_type != temp_func->get_identifier()){
+						// ! function definition has different return type
+						error_count++;
+						fprintf(log_out, "Error at line no:%d Function \"%s\" has different return type\n\n", line_count, func_name.c_str());
+						fprintf(error_out, "Error at line no:%d Function \"%s\" has different return type\n\n", line_count, func_name.c_str());
+						definition_matched = false;
+					}
+					// if the function definition matches the declaration then 
+					// remove the function from the symbol table and add it again with the definition
+					if(definition_matched){
+						table.remove(func_name);
+						temp_func = new symbol_info(func_name, func_ret_type, func_param_list);
+						table.insert(temp_func);
+					}
+					// set the fundtion as defined
+					temp_func->set_defined(true);
+
+					// enter to the function scope
+					table.create_scope();
+				}
+			}
+		} else {
+			// function is not declared
+			symbol_info* temp_func = new symbol_info(func_name, func_ret_type, func_param_list);
+			temp_func->set_defined(true);
+			table.insert(temp_func);
+			// enter to the function scope
+			table.create_scope();
+		}
+		
+	} compound_statement {
+		// cout<<"type_specifier id lparen rparen compound_statement found"<<endl;
+		string argument_name = $1->get_name() + " " + $2->get_name() + "()" + $6->get_name();
+		string argument_identifier = "function_definition";
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+		fprintf(log_out, "Line no:%d - function definition : type_specifier ID LPAREN RPAREN compound_statement\n\n%s\n\n", line_count, argument_name.c_str());
 	}
  	;				
 
@@ -148,7 +378,7 @@ compound_statement : LCURL statements RCURL {
  		    
 var_declaration : type_specifier declaration_list SEMICOLON {
 		// cout<<"type_specifier declaration_list semicolon found"<<endl;
-		string variable_type = $1->get_name();
+		string variable_type = $1->get_identifier();
 
 		if(variable_type == "void"){
 			error_count++;
@@ -331,7 +561,7 @@ statement : var_declaration {
 		string argument_name = "return " + $2->get_name() + ";";
 		string argument_identifier = "statement";
 
-		if(current_function_ret_type == "VOID"){
+		if(current_function_ret_type == "void"){
 			error_count++;
 			fprintf(log_out, "Error at line no: %d Function - %s does not have a return type\n", line_count, current_function_name.c_str());
 			fprintf(error_out, "Error at line no: %d Function - %s does not have a return type\n", line_count, current_function_name.c_str());
@@ -667,8 +897,10 @@ int main(int argc,char *argv[]) {
 
 	yyin=fp;
 	yyparse();
+	table.print_all(log_out);
 	
-
+	fprintf(log_out, "Total Lines: %d\n", line_count);
+	fprintf(log_out, "Total Errors: %d\n", error_count);
 	fclose(log_out);
 	fclose(error_out);
 

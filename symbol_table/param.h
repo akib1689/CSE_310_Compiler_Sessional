@@ -7,18 +7,18 @@ using namespace std;
 class param {
    private:
     string name;
-    string identifier;
+    string type;
     
       
    public:
-    param(string name, string identifier) {
+    param(string name, string type) {
         this->name = name;
-        this->identifier = identifier;
+        this->type = type;
     }
 
     param(const param& other) {
         this->name = other.name;
-        this->identifier = other.identifier;
+        this->type = other.type;
     }
 
     ~param() {
@@ -27,14 +27,14 @@ class param {
     string get_name() {
         return this->name;
     }
-    string get_identifier() {
-        return this->identifier;
+    string get_type() {
+        return this->type;
     }
     void set_name(string name) {
         this->name = name;
     }
-    void set_identifier(string identifier) {
-        this->identifier = identifier;
+    void set_type(string type) {
+        this->type = type;
     }
 };
 #endif // PARAM_H
