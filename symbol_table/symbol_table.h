@@ -60,13 +60,24 @@ class symbol_table {
      * @param name          name of the symbol
      * @param identifier    type of symbol
      */
-    void insert(string name, string identifier) {
+    bool insert(string name, string identifier) {
         this->ensure_scope();
         if (top->insert(name, identifier))     {
             this->print_all();
+            return true;
         }
-        
-        
+        return false;        
+    }
+    /**
+     * @brief overloaded function of the insert function
+     * it is used to insert the symbol information in the table
+     * @param info symbol_info pointer to the symbol_info object that is to be inserted
+     * @return true if successfully inserted to the table
+     * @return false if already in the table
+     */
+    bool insert(symbol_info* info) {
+        this->ensure_scope();
+        return top->insert(info);
     }
     //-----------overloaded function to print to file------------
     /**
@@ -76,11 +87,13 @@ class symbol_table {
      * @param identifier    type of symbol
      * @param fp            file pointer to which the output is written
      */
-    void insert(string name, string identifier, FILE* fp) {
+    bool insert(string name, string identifier, FILE* fp) {
         this->ensure_scope();
         if (top->insert(name, identifier, fp))     {
             this->print_all(fp);
+            return true;
         }
+        return false;
     }
     /**
      * @brief function to search a symbol by name in the table

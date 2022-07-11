@@ -107,14 +107,39 @@ class scope_table {
             return false;
         }
         // successful
-        cout << "Inserted in Scopetable# " << this->id << " at position "
+        cout << "Inserted "<< name <<" in Scopetable# " << this->id << " at position "
+            << hash_val << " , " << index << endl;
+        return true;
+    }
+    /**
+     * @brief overloaded function of the insert function
+     * it is used to insert the symbol information in the table
+     * @param info symbol_info pointer to the symbol_info object that is to be inserted
+     * @return true if successfully inserted to the table
+     * @return false if already in the table
+     */
+    bool insert(symbol_info* info) {
+        if (info == NULL) {
+            cout << "Error: info is NULL" << endl;
+            return false;
+        }
+        unsigned int hash_val = hash_value(info->get_name());
+        int index = array[hash_val].insert(info);
+        if (index < 0) {
+            // unsuccessful
+            cout << "There is a variable with <" << info->get_name()
+                << "> already in this scope" << endl;
+            return false;
+        }
+        // successful
+        cout << "Inserted "<< info->get_name() <<" in Scopetable# " << this->id << " at position "
             << hash_val << " , " << index << endl;
         return true;
     }
     /**
      * @brief this is the overloaded function of the insert function
      * it is used to insert the symbol information in the table
-     *  also print the output to a file passed to the function
+     * also print the output to a file passed to the function
      * 
      * @param name          name of the symbol
      * @param identifier    symbol type

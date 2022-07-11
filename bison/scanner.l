@@ -74,10 +74,9 @@ ill_formed_identifier {int_litral}{identifier}
 "case" {return CASE;}
 "default" {return DEFAULT;}
 "continue" {return CONTINUE;}
-"println" {return PRINTLN;}
+"printf" {return PRINTLN;}
 [+-] {
-	char* s=strtoupper(yytext);
-    symbol_info* info=new symbol_info(s,"ADDOP");
+    symbol_info* info=new symbol_info(yytext,"ADDOP");
     yylval.info = info;
     return ADDOP;
 }
@@ -85,8 +84,7 @@ ill_formed_identifier {int_litral}{identifier}
     return ASSIGNOP;
 }
 [*/%] {
-	char* s=strtoupper(yytext);
-    symbol_info* info = new symbol_info(s,"MULOP");
+    symbol_info* info = new symbol_info(yytext,"MULOP");
     yylval.info = info;
     return MULOP;
 }
@@ -118,14 +116,12 @@ ill_formed_identifier {int_litral}{identifier}
     return SEMICOLON;
 }
 {relational} {
-	char* s=strtoupper(yytext);
-    symbol_info* info = new symbol_info(s,"RELOP");
+    symbol_info* info = new symbol_info(yytext,"RELOP");
     yylval.info = info;
     return RELOP;
 }
 {logic} {
-	char* s=strtoupper(yytext);
-    symbol_info* info = new symbol_info(s,"LOGIC");
+    symbol_info* info = new symbol_info(yytext,"LOGIC");
     yylval.info = info;
     return LOGICOP;
 }
@@ -142,7 +138,6 @@ ill_formed_identifier {int_litral}{identifier}
 
 }
 {char_litral} {
-	char* s=special_to_char(yytext);
 	symbol_info* info = new symbol_info(yytext,"CONST_CHAR");
 	yylval.info = info;
 	return CONST_CHAR;
@@ -155,14 +150,12 @@ ill_formed_identifier {int_litral}{identifier}
 	line_count++;
 }
 {int_litral} {
-	char* s=strtoupper(yytext);
-	symbol_info* info = new symbol_info(s,"CONST_INT");
+	symbol_info* info = new symbol_info(yytext,"CONST_INT");
 	yylval.info = info;
 	return CONST_INT;
 }
 {float_litral} {
-	char* s=strtoupper(yytext);
-	symbol_info* info = new symbol_info(s,"CONST_FLOAT");
+	symbol_info* info = new symbol_info(yytext,"CONST_FLOAT");
 	yylval.info = info;
 	return CONST_FLOAT;
 }
@@ -173,8 +166,7 @@ ill_formed_identifier {int_litral}{identifier}
 	
 }
 {identifier} {
-	char* s=yytext;
-	symbol_info* info = new symbol_info(s,"ID");
+	symbol_info* info = new symbol_info(yytext,"ID");
 	yylval.info = info;
 	return ID;
 }
@@ -303,6 +295,7 @@ ill_formed_identifier {int_litral}{identifier}
 
 /**
 * @brief 	function to convert the lower case upper case
+* ! not used anymore as the keywords are seperatedly returned
 * @param 	char* str 	string to convert
 * @return 	char* 		converted string
 * */
