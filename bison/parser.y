@@ -199,7 +199,9 @@ variable : ID {
  	}
 	| variable ASSIGNOP logic_expression {
 		// todo start working from here and go up to the top
-		cout<<"variable assignop logic_expression found"<<endl;
+		symbol_info left = $1;
+		symbol_info right = $3;
+		
 	} 	
 	;
 
