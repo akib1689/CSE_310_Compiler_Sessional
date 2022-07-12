@@ -18,6 +18,8 @@ char *original_str = NULL;
 int line_count=1;
 int error_count=0;
 void yyerror(char *);
+extern FILE* log_out;
+extern FILE* error_out;
 
 //------------function declaretion-------------------
 char* strtoupper(char*);
@@ -209,12 +211,16 @@ ill_formed_identifier {int_litral}{identifier}
 <string_state><<EOF>> {
 	append_to_str(yytext, yytext);
 	error_count++;
+	fprintf(log_out, "Error at line no:%d Unterminated string\n", line_count);
+	fprintf(error_out, "Error at line no:%d Unterminated string\n", line_count);
 	make_str_to_store_null();
 	BEGIN INITIAL;
 }
 <string_state>{newline} {
 	append_to_str(yytext, yytext);
 	error_count++;
+	fprintf(log_out, "Error at line no:%d Unterminated string\n", line_count);
+	fprintf(error_out, "Error at line no:%d Unterminated string\n", line_count);
 	make_str_to_store_null();
 	line_count++;
 	BEGIN INITIAL;
@@ -242,6 +248,8 @@ ill_formed_identifier {int_litral}{identifier}
 <string_escape_state><<EOF>> {
 	append_to_str(yytext, yytext);
 	error_count++;
+	fprintf(log_out, "Error at line no:%d Unterminated string\n\n", line_count);
+	fprintf(error_out, "Error at line no:%d Unterminated string\n\n", line_count);
 	make_str_to_store_null();
 	BEGIN INITIAL;
 }
@@ -272,6 +280,8 @@ ill_formed_identifier {int_litral}{identifier}
 }
 <block_comment_state><<EOF>> {
 	error_count++;
+	fprintf(log_out, "Error at line no:%d Unterminated comment\n\n", line_count);
+	fprintf(error_out, "Error at line no:%d Unterminated comment\n\n", line_count);
 	make_str_to_store_null();
 	BEGIN INITIAL;
 }
@@ -289,6 +299,8 @@ ill_formed_identifier {int_litral}{identifier}
 }
 . {
 	error_count++;
+	fprintf(log_out, "Error at line no:%d Unknown character %s\n\n", line_count, yytext);
+	fprintf(error_out, "Error at line no:%d Unknown character %s\n\n", line_count, yytext);
 }
 
 %%

@@ -115,7 +115,11 @@ class symbol_info {
 
     // finction to print the node in a file passed to the function
     void print_node(FILE *file) {
-        fprintf(file, "<%s : %s>", this->name.c_str(), this->identifier.c_str());
+        string str = this->identifier;
+        if (this->is_array() || this->is_function() || this->is_variable()) {
+            str = "ID";
+        }
+        fprintf(file, "<%s : %s>", this->name.c_str(), str.c_str());
     }
 };
 #endif // SYMBOL_INFO_H

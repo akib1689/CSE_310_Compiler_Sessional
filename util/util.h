@@ -124,7 +124,7 @@ vector<param> get_param_type_list(string param_str){
     for(int i = 0; i < param_str_list.size(); i++){
         string param_str = param_str_list[i];
         vector<string> param_str_split = split(param_str, ' ');
-        string param_type = param_str_split[0];
+        string param_type = get_type_name(param_str_split[0]);
         param_type_list.push_back(param("", param_type));
     }
     return param_type_list;

@@ -24,14 +24,14 @@ void yyerror(char *s)
 	//write your code
 	error_count++;
 	fprintf(log_out, "Error at line %d: %s\n\n", line_count, s);
-	fprintf(error_out, "Error at line no: %d - \"%s\"\n\n", line_count, s);
+	fprintf(error_out, "Error at line no:%d  \'%s\'\n\n", line_count, s);
 }
 
 
 %}
 
 %union {
-	symbol_info* info; 
+	symbol_info* info;
 }
 
 %token IF ELSE FOR WHILE DO BREAK INT CHAR FLOAT DOUBLE VOID RETURN SWITCH CASE DEFAULT CONTINUE PRINTLN
@@ -87,7 +87,7 @@ unit : var_declaration {
      
 func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON {
 		// cout<<"type_specifier id lparen parameter_list rparen semicolon found"<<endl;
-		string func_ret_type = $1->get_name();
+		string func_ret_type = $1->get_identifier();
 		string func_name = $2->get_name();
 
 		vector<param> func_param_list = get_param_type_list($4->get_name());
@@ -114,7 +114,7 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON {
 	}
 	| type_specifier ID LPAREN RPAREN SEMICOLON {
 		// cout<<"type_specifier id lparen rparen semicolon found"<<endl;
-		string func_ret_type = $1->get_name();
+		string func_ret_type = $1->get_identifier();
 		string func_name = $2->get_name();
 
 		vector<param> func_param_list;
@@ -156,8 +156,8 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 				if(temp_func->is_defined()){
 					// ! function alredy defined cannot be defined again
 					error_count++;
-					fprintf(log_out, "Error at line no:%d Function \"%s\" already defined\n\n", line_count, func_name.c_str());
-					fprintf(error_out, "Error at line no:%d Function \"%s\" already defined\n\n", line_count, func_name.c_str());
+					fprintf(log_out, "Error at line no:%d Function \'%s\' already defined\n\n", line_count, func_name.c_str());
+					fprintf(error_out, "Error at line no:%d Function \'%s\' already defined\n\n", line_count, func_name.c_str());
 				} else {
 					// okay function is declared as a function but not defined 
 					bool definition_matched = true;
@@ -167,8 +167,8 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 					if(declared_param_count != definition_param_count){
 						// ! function definition has different number of parameters
 						error_count++;
-						fprintf(log_out, "Error at line no:%d Function \"%s\" has different number of parameters\n\n", line_count, func_name.c_str());
-						fprintf(error_out, "Error at line no:%d Function \"%s\" has different number of parameters\n\n", line_count, func_name.c_str());
+						fprintf(log_out, "Error at line no:%d Function \'%s\' has different number of parameters\n\n", line_count, func_name.c_str());
+						fprintf(error_out, "Error at line no:%d Function \'%s\' has different number of parameters\n\n", line_count, func_name.c_str());
 						definition_matched = false;
 					} else {
 						vector<param> declared_param_list = temp_func->get_params();
@@ -176,9 +176,15 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 							if(declared_param_list[i].get_type() != func_param_list[i].get_type()){
 								// ! function definition has different parameter types
 								error_count++;
-								fprintf(log_out, "Error at line no:%d Function \"%s\" has different parameter types\n\n", line_count, func_name.c_str());
-								fprintf(error_out, "Error at line no:%d Function \"%s\" has different parameter types\n\n", line_count, func_name.c_str());
+								fprintf(log_out, "Error at line no:%d Function \'%s\' has different parameter types\n\n", line_count, func_name.c_str());
+								fprintf(error_out, "Error at line no:%d Function \'%s\' has different parameter types\n\n", line_count, func_name.c_str());
 								definition_matched = false;
+							}
+							if(func_param_list[i].get_name()==""){
+								// ! function definition has no parameter names
+								error_count++;
+								fprintf(log_out, "Error at line no:%d Function \'%s\' has no parameter names\n\n", line_count, func_name.c_str());
+								fprintf(error_out, "Error at line no:%d Function \'%s\' has no parameter names\n\n", line_count, func_name.c_str());
 							}
 							
 						}
@@ -186,8 +192,8 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 					if(func_ret_type != temp_func->get_identifier()){
 						// ! function definition has different return type
 						error_count++;
-						fprintf(log_out, "Error at line no:%d Function \"%s\" has different return type\n\n", line_count, func_name.c_str());
-						fprintf(error_out, "Error at line no:%d Function \"%s\" has different return type\n\n", line_count, func_name.c_str());
+						fprintf(log_out, "Error at line no:%d Function \'%s\' has different return type\n\n", line_count, func_name.c_str());
+						fprintf(error_out, "Error at line no:%d Function \'%s\' has different return type\n\n", line_count, func_name.c_str());
 						definition_matched = false;
 					}
 					// if the function definition matches the declaration then 
@@ -211,8 +217,8 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 						if(!result){
 							// ! function parameter already declared
 							error_count++;
-							fprintf(log_out, "Error at line no:%d Function parameter \"%s\" already declared\n\n", line_count, param_name.c_str());
-							fprintf(error_out, "Error at line no:%d Function parameter \"%s\" already declared\n\n", line_count, param_name.c_str());
+							fprintf(log_out, "Error at line no:%d Function parameter \'%s\' already declared\n\n", line_count, param_name.c_str());
+							fprintf(error_out, "Error at line no:%d Function parameter \'%s\' already declared\n\n", line_count, param_name.c_str());
 						}
 					}
 				}
@@ -220,9 +226,22 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 				// ! function is not declared as a function but is already declared
 				// we will enter scope no matter what and treat this as a function
 				table.create_scope();
+				// add the parameters to the symbol table
+				for(int i = 0; i < func_param_list.size(); i++){
+					string param_name = func_param_list[i].get_name();
+					string param_type = func_param_list[i].get_type();
+					bool result = table.insert(new symbol_info(param_name, param_type));
+
+					if(!result){
+						// ! function parameter already declared
+						error_count++;
+						fprintf(log_out, "Error at line no:%d Function parameter \'%s\' already declared\n\n", line_count, param_name.c_str());
+						fprintf(error_out, "Error at line no:%d Function parameter \'%s\' already declared\n\n", line_count, param_name.c_str());
+					}
+				}
 				error_count++;
-				fprintf(log_out, "Error at line no:%d Function \"%s\" already declared but not as Function\n\n", line_count, func_name.c_str());
-				fprintf(error_out, "Error at line no:%d Function \"%s\" already declared but not as Function\n\n", line_count, func_name.c_str());
+				fprintf(log_out, "Error at line no:%d Function \'%s\' already declared but not as Function\n\n", line_count, func_name.c_str());
+				fprintf(error_out, "Error at line no:%d Function \'%s\' already declared but not as Function\n\n", line_count, func_name.c_str());
 			}
 		} else {
 			// function is not declared okay
@@ -240,8 +259,8 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 				if(!result){
 					// ! function parameter already declared
 					error_count++;
-					fprintf(log_out, "Error at line no:%d Function parameter \"%s\" already declared\n\n", line_count, param_name.c_str());
-					fprintf(error_out, "Error at line no:%d Function parameter \"%s\" already declared\n\n", line_count, param_name.c_str());
+					fprintf(log_out, "Error at line no:%d Function parameter \'%s\' already declared\n\n", line_count, param_name.c_str());
+					fprintf(error_out, "Error at line no:%d Function parameter \'%s\' already declared\n\n", line_count, param_name.c_str());
 				}
 			}
 		}
@@ -251,12 +270,14 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 		string argument_identifier = "function_definition";
 
 		$$ = new symbol_info(argument_name, argument_identifier);
-		fprintf(log_out, "Line no:%d - function definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement\n\n%s\n\n", line_count, argument_name.c_str());
+		fprintf(log_out, "Line %d - function definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement\n\n%s\n\n", line_count, argument_name.c_str());
 	}
 	| type_specifier ID LPAREN RPAREN {
 		string func_ret_type = $1->get_identifier();
 		string func_name = $2->get_name();
 		vector<param> func_param_list;
+		current_function_ret_type = func_ret_type;
+		current_function_name = func_name;
 
 		symbol_info* temp_func = table.search(func_name);
 		if(temp_func != NULL){
@@ -266,8 +287,8 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 				if(temp_func->is_defined()){
 					// ! function is already defined and cannot be redefined
 					error_count++;
-					fprintf(log_out, "Error at line no:%d Function \"%s\" already defined\n\n", line_count, func_name.c_str());
-					fprintf(error_out, "Error at line no:%d Function \"%s\" already defined\n\n", line_count, func_name.c_str());
+					fprintf(log_out, "Error at line no:%d Function \'%s\' already defined\n\n", line_count, func_name.c_str());
+					fprintf(error_out, "Error at line no:%d Function \'%s\' already defined\n\n", line_count, func_name.c_str());
 				} else {
 					// function is declared as a function but not defined
 					bool definition_matched = true;
@@ -277,15 +298,15 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 					if(declared_param_count != definition_param_count){
 						// ! function definition has different number of parameters
 						error_count++;
-						fprintf(log_out, "Error at line no:%d Function \"%s\" has different number of parameters\n\n", line_count, func_name.c_str());
-						fprintf(error_out, "Error at line no:%d Function \"%s\" has different number of parameters\n\n", line_count, func_name.c_str());
+						fprintf(log_out, "Error at line no:%d Function \'%s\' has different number of parameters\n\n", line_count, func_name.c_str());
+						fprintf(error_out, "Error at line no:%d Function \'%s\' has different number of parameters\n\n", line_count, func_name.c_str());
 						definition_matched = false;
 					}
 					if(func_ret_type != temp_func->get_identifier()){
 						// ! function definition has different return type
 						error_count++;
-						fprintf(log_out, "Error at line no:%d Function \"%s\" has different return type\n\n", line_count, func_name.c_str());
-						fprintf(error_out, "Error at line no:%d Function \"%s\" has different return type\n\n", line_count, func_name.c_str());
+						fprintf(log_out, "Error at line no:%d Function \'%s\' has different return type\n\n", line_count, func_name.c_str());
+						fprintf(error_out, "Error at line no:%d Function \'%s\' has different return type\n\n", line_count, func_name.c_str());
 						definition_matched = false;
 					}
 					// if the function definition matches the declaration then 
@@ -371,8 +392,10 @@ compound_statement : LCURL statements RCURL {
 		string argument_identifier = "compound_statement";
 
 		$$ = new symbol_info(argument_name, argument_identifier);
-
 		fprintf(log_out, "Line %d - compound_statement : LCURL RCURL\n\n%s\n\n", line_count, $$->get_name().c_str());
+		
+		table.print_all(log_out);
+		table.delete_scope();
 	}
  	;
  		    
@@ -510,7 +533,7 @@ statement : var_declaration {
 
 		$$ = new symbol_info(argument_name, argument_identifier);
 
-		fprintf(log_out, "Line %d - statement : IF LPAREN expression RPAREN statement %prec LOWER_THAN_ELSE\n\n%s\n\n", line_count, $$->get_name().c_str());
+		fprintf(log_out, "Line %d - statement : IF LPAREN expression RPAREN statement\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
 	| IF LPAREN expression RPAREN statement ELSE statement {
 		// cout<<"if else statement detected"<<endl;
@@ -541,14 +564,14 @@ statement : var_declaration {
 		if(temp == NULL){
 			// ! the variable is not declared
 			error_count++;
-			fprintf(log_out, "Error at line no: %d Variable - %s not declared\n\n", line_count, $3->get_name().c_str());
-			fprintf(error_out, "Error at line no: %d Variable - %s not declared\n\n", line_count, $3->get_name().c_str());
+			fprintf(log_out, "Error at line no:%d Variable - %s not declared\n\n", line_count, $3->get_name().c_str());
+			fprintf(error_out, "Error at line no:%d Variable - %s not declared\n\n", line_count, $3->get_name().c_str());
 		} else {
 			if (!temp->is_variable()){
 				// ! the variable is not a variable
 				error_count++;
-				fprintf(log_out, "Error at line no: %d Variable - %s is not a variable\n\n", line_count, $3->get_name().c_str());
-				fprintf(error_out, "Error at line no: %d Variable - %s is not a variable\n\n", line_count, $3->get_name().c_str());
+				fprintf(log_out, "Error at line no:%d Variable - %s is not a variable\n\n", line_count, $3->get_name().c_str());
+				fprintf(error_out, "Error at line no:%d Variable - %s is not a variable\n\n", line_count, $3->get_name().c_str());
 			}
 		}
 
@@ -561,10 +584,10 @@ statement : var_declaration {
 		string argument_name = "return " + $2->get_name() + ";";
 		string argument_identifier = "statement";
 
-		if(current_function_ret_type == "void"){
+		if(current_function_ret_type == "VOID"){
 			error_count++;
-			fprintf(log_out, "Error at line no: %d Function - %s does not have a return type\n", line_count, current_function_name.c_str());
-			fprintf(error_out, "Error at line no: %d Function - %s does not have a return type\n", line_count, current_function_name.c_str());
+			fprintf(log_out, "Error at line no:%d Function \'%s\' does not have a return type\n\n", line_count, current_function_name.c_str());
+			fprintf(error_out, "Error at line no:%d Function \'%s\' does not have a return type\n\n", line_count, current_function_name.c_str());
 			current_function_ret_type = "ERROR";
 		}
 
@@ -592,8 +615,8 @@ variable : ID {
 		if(temp == NULL){
 			// ! current symbol is not in the table
 			error_count++;
-			fprintf(log_out, "Error at line no: %d Variable - %s not declared\n\n", line_count, $1->get_name().c_str());
-			fprintf(error_out, "Error at line no: %d Variable - %s not declared\n\n", line_count, $1->get_name().c_str());
+			fprintf(log_out, "Error at line no:%d Variable - %s not declared\n\n", line_count, $1->get_name().c_str());
+			fprintf(error_out, "Error at line no:%d Variable - %s not declared\n\n", line_count, $1->get_name().c_str());
 
 			$$ = new symbol_info($1->get_name(), "ERROR");
 		} else {
@@ -613,8 +636,8 @@ variable : ID {
 		if(temp == NULL){
 			// ! current symbol is not in the table
 			error_count++;
-			fprintf(log_out, "Error at line no: %d Variable - %s not declared\n\n", line_count, $1->get_name().c_str());
-			fprintf(error_out, "Error at line no: %d Variable - %s not declared\n\n", line_count, $1->get_name().c_str());
+			fprintf(log_out, "Error at line no:%d Variable - %s not declared\n\n", line_count, $1->get_name().c_str());
+			fprintf(error_out, "Error at line no:%d Variable - %s not declared\n\n", line_count, $1->get_name().c_str());
 			string argument_name = $1->get_name() + "[" + $3->get_name() + "]";
 			$$ = new symbol_info(argument_name, "ERROR");
 		} else {
@@ -623,8 +646,8 @@ variable : ID {
 				if ($3->get_identifier() != "CONST_INT"){
 					// ! index is not an integer error
 					error_count++;
-					fprintf(log_out, "Error at line no: %d Array index is not an integer\n\n", line_count);
-					fprintf(error_out, "Error at line no: %d Array index is not an integer\n\n", line_count);
+					fprintf(log_out, "Error at line no:%d Array index is not an integer\n\n", line_count);
+					fprintf(error_out, "Error at line no:%d Array index is not an integer\n\n", line_count);
 				}
 				string argument_name = $1->get_name() + "[" + $3->get_name() + "]";
 				$$ = new symbol_info(argument_name, temp->get_identifier());
@@ -653,20 +676,22 @@ variable : ID {
 					// error
 					error_count++;
 					if(left->is_array()){
-						fprintf(log_out, "Error at line no: %d Type mismatch, %s is an array\n\n", line_count, left->get_name().c_str());
-						fprintf(error_out, "Error at line no: %d Type mismatch, %s is an array\n\n", line_count, left->get_name().c_str());
+						fprintf(log_out, "Error at line no:%d Type mismatch, %s is an array\n\n", line_count, left->get_name().c_str());
+						fprintf(error_out, "Error at line no:%d Type mismatch, %s is an array\n\n", line_count, left->get_name().c_str());
 					}else{
-						fprintf(log_out, "Error at line no: %d Type mismatch, %s is an array\n\n", line_count, right->get_name().c_str());
-						fprintf(error_out, "Error at line no: %d Type mismatch, %s is an array\n\n", line_count, right->get_name().c_str());
+						fprintf(log_out, "Error at line no:%d Type mismatch, %s is an array\n\n", line_count, right->get_name().c_str());
+						fprintf(error_out, "Error at line no:%d Type mismatch, %s is an array\n\n", line_count, right->get_name().c_str());
 					}
 				} 
 			} else if (left->get_identifier() == "CONST_FLOAT" && right->get_identifier() == "CONST_INT") {
-				// do nothing
+				// okay do nothing
+			} else if (right->get_identifier() == "UNDEFINED") {
+				// do nothing (error already printed)
 			} else {
 				// error
 				error_count++;
-				fprintf(log_out, "Error at line no: %d Type mismatch, %s is not of type %s\n\n", line_count, left->get_name().c_str(), right->get_identifier().c_str());
-				fprintf(error_out, "Error at line no: %d Type mismatch, %s is not of type %s\n\n", line_count, left->get_name().c_str(), right->get_identifier().c_str());
+				fprintf(log_out, "Error at line no:%d Type mismatch, %s is not of type %s\n\n", line_count, left->get_name().c_str(), right->get_identifier().c_str());
+				fprintf(error_out, "Error at line no:%d Type mismatch, %s is not of type %s\n\n", line_count, left->get_name().c_str(), right->get_identifier().c_str());
 			}
 		}
 
@@ -690,8 +715,8 @@ logic_expression : rel_expression {
 		string operator_name = $2->get_name();
 		if(left_identifier != "CONST_INT" || right_identifier != "CONST_INT"){
 			error_count++;
-			fprintf(log_out, "Error at line no: %d Relational operator can only be used with two integers\n\n", line_count);
-			fprintf(error_out, "Error at line no: %d Relational operator can only be used with two integers\n\n", line_count);
+			fprintf(log_out, "Error at line no:%d Relational operator can only be used with two integers\n\n", line_count);
+			fprintf(error_out, "Error at line no:%d Relational operator can only be used with two integers\n\n", line_count);
 			return_identifier = "ERROR";
 		}
 		string argument_name = $1->get_name() + $2->get_name() + $3->get_name();
@@ -758,8 +783,8 @@ term :	unary_expression {
 				}
 				if(right_name == "0"){
 					error_count++;
-					fprintf(log_out, "Error at line no:%d - Division by zero\n\n", line_count);
-					fprintf(error_out, "Error at line no:%d - Division by zero\n\n", line_count);
+					fprintf(log_out, "Error at line no:%d  Division by zero\n\n", line_count);
+					fprintf(error_out, "Error at line no:%d  Division by zero\n\n", line_count);
 					return_identifier = "ERROR";
 				}
 				break;
@@ -772,8 +797,8 @@ term :	unary_expression {
 				} else {
 					if(right_name == "0"){
 						error_count++;
-						fprintf(log_out, "Error at line no:%d \% operator can not be used with 0\n\n", line_count);
-						fprintf(error_out, "Error at line no:%d \% operator can not be used with 0\n\n", line_count);
+						fprintf(log_out, "Error at line no:%d %c operator can not be used with 0\n\n", line_count, '%');
+						fprintf(error_out, "Error at line no:%d %c operator can not be used with 0\n\n", line_count, '%');
 						return_identifier = "ERROR";
 					} else {
 						return_identifier = "CONST_INT";
@@ -818,22 +843,21 @@ factor	: variable {
 		fprintf(log_out, "Line %d - factor : variable\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
 	| ID LPAREN argument_list RPAREN {
-		// todo : need to work here envolves error production
 		string func_ret_type = "UNDEFINED";
 		symbol_info* temp_func = table.search($1->get_name());
 
 		if(temp_func == NULL){
 			// ! function is not declared but called
 			error_count++;
-			fprintf(log_out, "Error at line no:%d - Function %s is not defined\n\n", line_count, $1->get_name().c_str());
-			fprintf(error_out, "Error at line no:%d - Function %s is not defined\n\n", line_count, $1->get_name().c_str());
+			fprintf(log_out, "Error at line no:%d Function %s is not defined\n\n", line_count, $1->get_name().c_str());
+			fprintf(error_out, "Error at line no:%d Function %s is not defined\n\n", line_count, $1->get_name().c_str());
 		} else {
 			// okay id is declared
 			if(!(temp_func->is_function())){
 				// ! function is not declared as function but called
 				error_count++;
-				fprintf(log_out, "Error at line no:%d - %s is not a function\n\n", line_count, $1->get_name().c_str());
-				fprintf(error_out, "Error at line no:%d - %s is not a function\n\n", line_count, $1->get_name().c_str());
+				fprintf(log_out, "Error at line no:%d  %s is not a function\n\n", line_count, $1->get_name().c_str());
+				fprintf(error_out, "Error at line no:%d  %s is not a function\n\n", line_count, $1->get_name().c_str());
 			} else {
 				// okay id is declared as function
 				func_ret_type = temp_func->get_identifier();
@@ -848,16 +872,16 @@ factor	: variable {
 				vector<param> func_param_list = temp_func->get_params();
 				int func_argument_count = temp_func->get_param_count();
 				// check if the return type of the declared function is void or not
-				if(func_ret_type == "void"){
+				if(func_ret_type == "VOID"){
 					// ! function is declared as void but called with arguments
 					error_count++;
-					fprintf(log_out, "Error at line no:%d - Function %s is declared as void but called with arguments\n\n", line_count, $1->get_name().c_str());
-					fprintf(error_out, "Error at line no:%d - Function %s is declared as void but called with arguments\n\n", line_count, $1->get_name().c_str());
+					fprintf(log_out, "Error at line no:%d  Function %s is declared as void but called with arguments\n\n", line_count, $1->get_name().c_str());
+					fprintf(error_out, "Error at line no:%d  Function %s is declared as void but called with arguments\n\n", line_count, $1->get_name().c_str());
 				}else if(argument_name_list.size() != func_argument_count) {
 					// ! function is declared with different number of arguments than called
 					error_count++;
-					fprintf(log_out, "Error at line no:%d - Function \'%s\' is declared with %d arguments but called with %d arguments\n\n", line_count, $1->get_name().c_str(), func_argument_count, argument_name_list.size());
-					fprintf(error_out, "Error at line no:%d - Function \'%s\' is declared with %d arguments but called with %d arguments\n\n", line_count, $1->get_name().c_str(), func_argument_count, argument_name_list.size());
+					fprintf(log_out, "Error at line no:%d  Function \'%s\' is declared with %d arguments but called with %d arguments\n\n", line_count, $1->get_name().c_str(), func_argument_count, argument_name_list.size());
+					fprintf(error_out, "Error at line no:%d  Function \'%s\' is declared with %d arguments but called with %d arguments\n\n", line_count, $1->get_name().c_str(), func_argument_count, argument_name_list.size());
 				} else {
 					// okay function is declared with same number of arguments as called
 					// check if the argument types are same as the declared function
@@ -865,8 +889,8 @@ factor	: variable {
 						if(func_param_list[i].get_type() != argument_identifier_list[i]){
 							// ! function is declared with different argument types than called
 							error_count++;
-							fprintf(log_out, "Error at line no:%d - Function \'%s\' is declared with %s but called with %s\n\n", line_count, $1->get_name().c_str(), func_param_list[i].get_type().c_str(), argument_identifier_list[i].c_str());
-							fprintf(error_out, "Error at line no:%d - Function \'%s\' is declared with %s but called with %s\n\n", line_count, $1->get_name().c_str(), func_param_list[i].get_type().c_str(), argument_identifier_list[i].c_str());
+							fprintf(log_out, "Error at line no:%d Type Mismatch. %d\'th argument of function \'%s\' is declared as %s\n\n", line_count,i+1, $1->get_name().c_str(), func_param_list[i].get_type().c_str());
+							fprintf(error_out, "Error at line no:%d Type Mismatch. %d\'th argument of function \'%s\' is declared as %s\n\n", line_count,i+1, $1->get_name().c_str(), func_param_list[i].get_type().c_str());
 						}
 					}
 
