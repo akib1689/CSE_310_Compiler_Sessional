@@ -142,7 +142,7 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON {
 		 
 func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 	// this is called after finding the ) in the function declaration and before the {
-		string func_ret_type = $1->get_name();
+		string func_ret_type = $1->get_identifier();
 		string func_name = $2->get_name();
 		vector<param> func_param_list = get_param_list($4->get_name());
 		current_function_ret_type = func_ret_type;
@@ -254,7 +254,7 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 		fprintf(log_out, "Line no:%d - function definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement\n\n%s\n\n", line_count, argument_name.c_str());
 	}
 	| type_specifier ID LPAREN RPAREN {
-		string func_ret_type = $1->get_name();
+		string func_ret_type = $1->get_identifier();
 		string func_name = $2->get_name();
 		vector<param> func_param_list;
 
@@ -380,7 +380,7 @@ var_declaration : type_specifier declaration_list SEMICOLON {
 		// cout<<"type_specifier declaration_list semicolon found"<<endl;
 		string variable_type = $1->get_identifier();
 
-		if(variable_type == "void"){
+		if(variable_type == "VOID"){
 			error_count++;
 			fprintf(error_out, "Error at line no:%d void is not a valid type for variable declaration\n\n", line_count);
 		} else {
@@ -819,6 +819,67 @@ factor	: variable {
 	}
 	| ID LPAREN argument_list RPAREN {
 		// todo : need to work here envolves error production
+		string func_ret_type = "UNDEFINED";
+		symbol_info* temp_func = table.search($1->get_name());
+
+		if(temp_func == NULL){
+			// ! function is not declared but called
+			error_count++;
+			fprintf(log_out, "Error at line no:%d - Function %s is not defined\n\n", line_count, $1->get_name().c_str());
+			fprintf(error_out, "Error at line no:%d - Function %s is not defined\n\n", line_count, $1->get_name().c_str());
+		} else {
+			// okay id is declared
+			if(!(temp_func->is_function())){
+				// ! function is not declared as function but called
+				error_count++;
+				fprintf(log_out, "Error at line no:%d - %s is not a function\n\n", line_count, $1->get_name().c_str());
+				fprintf(error_out, "Error at line no:%d - %s is not a function\n\n", line_count, $1->get_name().c_str());
+			} else {
+				// okay id is declared as function
+				func_ret_type = temp_func->get_identifier();
+				
+				// extract the argument list from the argument list
+				string argument_name_str = $3->get_name();
+				string argument_identifier_str = $3->get_identifier();
+				vector<string> argument_name_list = split(argument_name_str, ',');
+				vector<string> argument_identifier_list = split(argument_identifier_str, ',');
+				
+				//get the function argument list
+				vector<param> func_param_list = temp_func->get_params();
+				int func_argument_count = temp_func->get_param_count();
+				// check if the return type of the declared function is void or not
+				if(func_ret_type == "void"){
+					// ! function is declared as void but called with arguments
+					error_count++;
+					fprintf(log_out, "Error at line no:%d - Function %s is declared as void but called with arguments\n\n", line_count, $1->get_name().c_str());
+					fprintf(error_out, "Error at line no:%d - Function %s is declared as void but called with arguments\n\n", line_count, $1->get_name().c_str());
+				}else if(argument_name_list.size() != func_argument_count) {
+					// ! function is declared with different number of arguments than called
+					error_count++;
+					fprintf(log_out, "Error at line no:%d - Function \'%s\' is declared with %d arguments but called with %d arguments\n\n", line_count, $1->get_name().c_str(), func_argument_count, argument_name_list.size());
+					fprintf(error_out, "Error at line no:%d - Function \'%s\' is declared with %d arguments but called with %d arguments\n\n", line_count, $1->get_name().c_str(), func_argument_count, argument_name_list.size());
+				} else {
+					// okay function is declared with same number of arguments as called
+					// check if the argument types are same as the declared function
+					for(int i = 0; i < func_argument_count; i++){
+						if(func_param_list[i].get_type() != argument_identifier_list[i]){
+							// ! function is declared with different argument types than called
+							error_count++;
+							fprintf(log_out, "Error at line no:%d - Function \'%s\' is declared with %s but called with %s\n\n", line_count, $1->get_name().c_str(), func_param_list[i].get_type().c_str(), argument_identifier_list[i].c_str());
+							fprintf(error_out, "Error at line no:%d - Function \'%s\' is declared with %s but called with %s\n\n", line_count, $1->get_name().c_str(), func_param_list[i].get_type().c_str(), argument_identifier_list[i].c_str());
+						}
+					}
+
+				}
+
+			}
+		}
+
+		string argument_name = $1->get_name() + "(" + $3->get_name() + ")";
+		string argument_identifier = func_ret_type;
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+		fprintf(log_out, "Line %d - factor : ID LPAREN argument_list RPAREN\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
 	| LPAREN expression RPAREN {
 		string argument_name = "(" + $2->get_name() + ")";

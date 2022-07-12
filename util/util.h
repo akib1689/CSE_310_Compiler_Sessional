@@ -58,6 +58,35 @@ string get_array_name(string str_array_declaration){
     int end_index = str_array_declaration.find('[');
     return str_array_declaration.substr(start_index, end_index);
 }
+/**
+ * @brief this function is a simple dictionary function that returns the
+ *        corresponding type of a given type name like int, float, to CONST_INT, CONST_FLOAT, etc.
+ * @param type_name the name of the type
+ * @return string the corresponding type 
+ */
+string get_type_name(string type_name){
+    if(type_name == "int"){
+        return "CONST_INT";
+    }
+    else if(type_name == "float"){
+        return "CONST_FLOAT";
+    }
+    else if(type_name == "char"){
+        return "CONST_CHAR";
+    }
+    else if(type_name == "string"){
+        return "STRING";
+    }
+    else if(type_name == "bool"){
+        return "CONST_BOOL";
+    }
+    else if(type_name == "void"){
+        return "VOID";
+    }
+    else{
+        return "ERROR";
+    }
+}
 
 /**
  * @brief this function is used to extract the parameter list from a string 
@@ -72,10 +101,13 @@ vector<param> get_param_list(string param_str){
         string param_str = param_str_list[i];
         vector<string> param_str_split = split(param_str, ' ');
         if(param_str_split.size() == 1){
-            param_list.push_back(param("", param_str_split[0]));
+            string param_type = get_type_name(param_str_split[0]);
+            param_list.push_back(param("", param_type));
         }
         else if(param_str_split.size() == 2){
-            param_list.push_back(param(param_str_split[1], param_str_split[0]));
+            string param_name = param_str_split[1];
+            string param_type = get_type_name(param_str_split[0]);
+            param_list.push_back(param(param_name, param_type));
         }
     }
     return param_list;
@@ -97,3 +129,4 @@ vector<param> get_param_type_list(string param_str){
     }
     return param_type_list;
 }
+
