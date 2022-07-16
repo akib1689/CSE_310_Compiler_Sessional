@@ -24,7 +24,7 @@ void yyerror(char *s)
 	//write your code
 	error_count++;
 	fprintf(log_out, "Error at line %d: %s\n\n", line_count, s);
-	fprintf(error_out, "Error at line no:%d  \'%s\'\n\n", line_count, s);
+	fprintf(error_out, "Error at line no:%d  %s\n\n", line_count, s);
 }
 
 
@@ -372,6 +372,17 @@ parameter_list  : parameter_list COMMA type_specifier ID {
 		$$ = $1;
 		fprintf(log_out, "Line %d - parameter_list : type_specifier\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
+	| parameter_list error_state {
+		// cout<<"parameter_list error found"<<endl;
+		string argument_name = $1->get_name();
+		string argument_identifier = "parameter_list";
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+
+		error_count++;
+		fprintf(log_out, "Error at line no:%d - Parameter not properly defined\n\n", line_count);
+		fprintf(error_out, "Error at line no:%d - Parameter not properly defined\n\n", line_count);
+	}
  	;
 
  		
@@ -486,6 +497,22 @@ declaration_list : declaration_list COMMA ID {
 
 		fprintf(log_out, "Line %d - declaration_list : ID LTHIRD CONST_INT RTHIRD\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
+	| declaration_list error_state {
+		// cout<<"error detected"<<endl;
+		string argument_name = $1->get_name();
+		string argument_identifier = "declaration_list";
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+
+		
+		error_count++;
+		fprintf(error_out, "Error at line no:%d Declaration error detected.\n\n", line_count);
+		fprintf(log_out, "Error at line no:%d Declaration error detected.\n\n", line_count);
+
+		fprintf(log_out, "Line %d - declaration_list : ID LTHIRD CONST_INT RTHIRD\n\n%s\n\n", line_count, $$->get_name().c_str());
+
+		
+	}
  	;
  		  
 statements : statement {
@@ -502,6 +529,17 @@ statements : statement {
 		$$ = new symbol_info(argument_name, argument_identifier);
 
 		fprintf(log_out, "Line %d - statements : statements statement\n\n%s\n\n", line_count, $$->get_name().c_str());
+	}
+	| statements error_state {
+		// cout<<"statements error state found"<<endl;
+		string argument_name = $1->get_name();
+		string argument_identifier = "statements";
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+
+		error_count++;
+		fprintf(log_out, "Error at line no:%d Statement not properly defined.\n\n", line_count);
+		fprintf(error_out, "Error at line no:%d Statement not properly defined.\n\n", line_count);
 	}
 	;
 	   
@@ -753,6 +791,17 @@ simple_expression : term {
 		$$ = new symbol_info(argument_name, argument_identifier);
 		fprintf(log_out, "Lind %d - simple_expression : simple_expression ADDOP term \n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
+	| simple_expression error_state {
+		string argument_name = $1->get_name();
+		string argument_identifier = $1->get_identifier();
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+
+		
+		error_count++;
+		fprintf(log_out, "Error at line no:%d Simple expression error detected.\n\n", line_count);
+		fprintf(error_out, "Error at line no:%d Simple expression error detected.\n\n", line_count);
+	}
 	;
 					
 term :	unary_expression {
@@ -963,6 +1012,12 @@ arguments : arguments COMMA logic_expression {
 		fprintf(log_out, "Line: %d - arguments : logic_expression\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
 	;
+error_state : error_state error {
+
+	}
+	| error {
+
+	}
 %%
 int main(int argc,char *argv[]) {
 
