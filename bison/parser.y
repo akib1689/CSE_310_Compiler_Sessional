@@ -1,7 +1,7 @@
 %{
 #include <bits/stdc++.h>
-#include "../symbol_table/symbol_table.h"
-#include "../util/util.h"
+#include "symbol_table.h"
+#include "util.h"
 using namespace std;
 
 int yyparse(void);
@@ -42,8 +42,8 @@ void yyerror(char *s)
 %type <info> program unit term simple_expression rel_expression expression_statement statement statements
 %type <info> var_declaration compound_statement declaration_list type_specifier parameter_list func_definition func_declaration
 
-%nonassoc LOWER_THAN_ELSE
-%nonassoc ELSE
+%nonassoc LOWER_THAN_ELSE LOWER_THAN_ERROR
+%nonassoc ELSE error
 
 %%
 
@@ -230,6 +230,12 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 				for(int i = 0; i < func_param_list.size(); i++){
 					string param_name = func_param_list[i].get_name();
 					string param_type = func_param_list[i].get_type();
+					if(param_name==""){
+						// ! function parameter has no name
+						error_count++;
+						fprintf(log_out, "Error at line no:%d Function parameter has no name\n\n", line_count);
+						fprintf(error_out, "Error at line no:%d Function parameter has no name\n\n", line_count);
+					}
 					bool result = table.insert(new symbol_info(param_name, param_type));
 
 					if(!result){
@@ -244,7 +250,7 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 				fprintf(error_out, "Error at line no:%d Function \'%s\' already declared but not as Function\n\n", line_count, func_name.c_str());
 			}
 		} else {
-			// function is not declared okay
+			// okay function is not declared
 			symbol_info* temp_func = new symbol_info(func_name, func_ret_type, func_param_list);
 			temp_func->set_defined(true);
 			table.insert(temp_func);
@@ -254,6 +260,12 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 			for(int i = 0; i < func_param_list.size(); i++){
 				string param_name = func_param_list[i].get_name();
 				string param_type = func_param_list[i].get_type();
+				if(param_name==""){
+					// ! function parameter has no name
+					error_count++;
+					fprintf(log_out, "Error at line no:%d Function parameter has no name\n\n", line_count);
+					fprintf(error_out, "Error at line no:%d Function parameter has no name\n\n", line_count);
+				}
 				bool result = table.insert(new symbol_info(param_name, param_type));
 
 				if(!result){
@@ -372,16 +384,16 @@ parameter_list  : parameter_list COMMA type_specifier ID {
 		$$ = $1;
 		fprintf(log_out, "Line %d - parameter_list : type_specifier\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
-	| parameter_list error_state {
+	| parameter_list error {
 		// cout<<"parameter_list error found"<<endl;
 		string argument_name = $1->get_name();
 		string argument_identifier = "parameter_list";
 
 		$$ = new symbol_info(argument_name, argument_identifier);
 
-		error_count++;
+		/* error_count++;
 		fprintf(log_out, "Error at line no:%d - Parameter not properly defined\n\n", line_count);
-		fprintf(error_out, "Error at line no:%d - Parameter not properly defined\n\n", line_count);
+		fprintf(error_out, "Error at line no:%d - Parameter not properly defined\n\n", line_count); */
 	}
  	;
 
@@ -497,7 +509,7 @@ declaration_list : declaration_list COMMA ID {
 
 		fprintf(log_out, "Line %d - declaration_list : ID LTHIRD CONST_INT RTHIRD\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
-	| declaration_list error_state {
+	| declaration_list error {
 		// cout<<"error detected"<<endl;
 		string argument_name = $1->get_name();
 		string argument_identifier = "declaration_list";
@@ -505,9 +517,9 @@ declaration_list : declaration_list COMMA ID {
 		$$ = new symbol_info(argument_name, argument_identifier);
 
 		
-		error_count++;
+		/* error_count++;
 		fprintf(error_out, "Error at line no:%d Declaration error detected.\n\n", line_count);
-		fprintf(log_out, "Error at line no:%d Declaration error detected.\n\n", line_count);
+		fprintf(log_out, "Error at line no:%d Declaration error detected.\n\n", line_count); */
 
 		fprintf(log_out, "Line %d - declaration_list : ID LTHIRD CONST_INT RTHIRD\n\n%s\n\n", line_count, $$->get_name().c_str());
 
@@ -530,16 +542,16 @@ statements : statement {
 
 		fprintf(log_out, "Line %d - statements : statements statement\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
-	| statements error_state {
+	| statements error {
 		// cout<<"statements error state found"<<endl;
 		string argument_name = $1->get_name();
 		string argument_identifier = "statements";
 
 		$$ = new symbol_info(argument_name, argument_identifier);
 
-		error_count++;
+		/* error_count++;
 		fprintf(log_out, "Error at line no:%d Statement not properly defined.\n\n", line_count);
-		fprintf(error_out, "Error at line no:%d Statement not properly defined.\n\n", line_count);
+		fprintf(error_out, "Error at line no:%d Statement not properly defined.\n\n", line_count); */
 	}
 	;
 	   
@@ -791,16 +803,16 @@ simple_expression : term {
 		$$ = new symbol_info(argument_name, argument_identifier);
 		fprintf(log_out, "Lind %d - simple_expression : simple_expression ADDOP term \n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
-	| simple_expression error_state {
+	| simple_expression error {
 		string argument_name = $1->get_name();
 		string argument_identifier = $1->get_identifier();
 
 		$$ = new symbol_info(argument_name, argument_identifier);
 
-		
+		/* 
 		error_count++;
 		fprintf(log_out, "Error at line no:%d Simple expression error detected.\n\n", line_count);
-		fprintf(error_out, "Error at line no:%d Simple expression error detected.\n\n", line_count);
+		fprintf(error_out, "Error at line no:%d Simple expression error detected.\n\n", line_count); */
 	}
 	;
 					
@@ -1012,12 +1024,6 @@ arguments : arguments COMMA logic_expression {
 		fprintf(log_out, "Line: %d - arguments : logic_expression\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
 	;
-error_state : error_state error {
-
-	}
-	| error {
-
-	}
 %%
 int main(int argc,char *argv[]) {
 
