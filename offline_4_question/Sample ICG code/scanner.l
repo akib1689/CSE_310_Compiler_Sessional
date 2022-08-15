@@ -60,7 +60,7 @@ MULOP [*/%]
 "main"	{return MAIN;}
 "println"	{return PRINTLN;}
 
-{ADDOP} { 
+[+-] { 
 			SymbolInfo *s= new  SymbolInfo(yytext, (char *)"ADDOP");
 			yylval = (YYSTYPE)s;
 			return ADDOP;

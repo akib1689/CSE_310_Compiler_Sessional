@@ -14,6 +14,8 @@ class symbol_info {
     symbol_info* next;
     string name;
     string identifier;
+    string code;
+    string asmName;
 
     int size;               // defined for array
     bool defined;           // defined for funciton
@@ -55,6 +57,8 @@ class symbol_info {
         this->params = params;
         this->defined = false;
         this->next = NULL;
+        this->code = "";
+        this->asmName = "";
     }
 
     // copy constructor
@@ -66,6 +70,8 @@ class symbol_info {
         this->size = that.size;
         this->defined = that.defined;
         this->params = that.params;
+        this->code = that.code;
+        this->asmName = that.asmName;
     }
 
     // destructor
@@ -80,32 +86,38 @@ class symbol_info {
 
     void set_defined(bool defined) { this->defined = defined; }
 
+    void set_code(string code) { this->code = code; }
+
+    void set_asmName(string asmName) { this->asmName = asmName; }
+
     symbol_info* get_next() { return this->next; }
 
     string get_name() { return this->name; }
 
     string get_identifier() { return this->identifier; }
 
+    string get_code() { return this->code; }
+
+    string get_asmName() { return this->asmName; }
+
     bool is_array() {return (this->size > 0);}
 
-    bool is_function() {return (this->size == -1);}
+    bool is_function() { return (this->size == -1); }
 
-    bool is_variable() {return (this->size == 0);}
+    bool is_variable() { return (this->size == 0); }
 
-    bool is_defined() {return this->defined;}
+    bool is_defined() { return this->defined; }
 
-    int get_size() {return this->size;}
+    int get_size() { return this->size; }
 
 
-    int get_param_count() {return this->params.size();}
+    int get_param_count() { return this->params.size(); }
 
     void add_param(string name, string type) {
         this->params.push_back(param(name, type));
     }
 
-    vector<param> get_params() {return this->params;}
-
-
+    vector<param> get_params() { return this->params; }
 
 
     // function to print the node

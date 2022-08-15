@@ -9,7 +9,6 @@ class param {
     string name;
     string type;
     
-      
    public:
     param(string name, string type) {
         this->name = name;

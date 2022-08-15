@@ -808,11 +808,6 @@ simple_expression : term {
 		string argument_identifier = $1->get_identifier();
 
 		$$ = new symbol_info(argument_name, argument_identifier);
-
-		/* 
-		error_count++;
-		fprintf(log_out, "Error at line no:%d Simple expression error detected.\n\n", line_count);
-		fprintf(error_out, "Error at line no:%d Simple expression error detected.\n\n", line_count); */
 	}
 	;
 					
