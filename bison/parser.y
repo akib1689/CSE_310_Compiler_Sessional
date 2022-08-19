@@ -462,9 +462,6 @@ var_declaration : type_specifier declaration_list SEMICOLON {
 
 						string asm_code = "\t\tSUB SP, " + to_string(func_var_count*2) + "\t\t\t;line no: "
 							+ to_string(line_count) + " " + array_name + " declared\n";
-						//print the offset
-						cout<<"offset: "<<temp->get_offset()<<endl;
-
 						print_asm_to_file(asm_out, asm_code);
 					}
 
@@ -711,6 +708,22 @@ variable : ID {
 			} else {
 				// current symbol is found in the table and it is not an array so all okay
 				$$ = new symbol_info(temp->get_name(), temp->get_identifier());
+
+
+				//write to assembly file
+				// check if the variable is global or local
+				if (temp->get_offset() == 0){
+					// global variable
+					string code = "\t\tPUSH " + temp->get_name() 
+					+ "\t\t\t\t;line no: " + to_string(line_count) + " - " + temp->get_name() + " global variable\n";
+					print_asm_to_file(asm_out, code);
+				} else {
+					// local variable
+					string code = "\t\tPUSH [BP + " + to_string(temp->get_offset()) 
+						+ "]\t\t\t\t;line no: " + to_string(line_count) + " - " + temp->get_name() + " local variable\n";
+
+					print_asm_to_file(asm_out, code);
+				}
 			}
 		}
 		fprintf(log_out, "Line %d - variable : ID\n\n%s\n\n",line_count, $$->get_name().c_str());
@@ -727,12 +740,35 @@ variable : ID {
 			$$ = new symbol_info(argument_name, "ERROR");
 		} else {
 			if(temp->is_array()) {
-				// current symbol is found in the table and it is an array so all okay
+				// okay current symbol is found in the table and it is an array
 				if ($3->get_identifier() != "CONST_INT"){
 					// ! index is not an integer error
 					error_count++;
 					fprintf(log_out, "Error at line no:%d Array index is not an integer\n\n", line_count);
 					fprintf(error_out, "Error at line no:%d Array index is not an integer\n\n", line_count);
+				} else {
+					// okay index is an integer and variable is an array 
+					// write to assembly file
+
+					string code = "\t\t;line no: " + to_string(line_count) + " - " + temp->get_name() + " array\n";
+					code += "\t\t;getting index: " + $3->get_name() + " from stack.\n";
+					code += "\t\tPOP BX\t\t\t\t;getting index from stack.\n";
+					code += "\t\tSHL BX, 1\t\t\t;multiplying index by 2.\n";
+
+					// check if the variable is global or local
+					if(temp->get_offset() == 0){
+						// global variable
+						code += "\t\tMOV AX, "+ temp->get_name()+"[BX]\t\t;getting the value of the array at index BX\n";
+					} else {
+						// local variable
+						code += "\t\tADD BX, " + to_string(temp->get_offset()) + "\t\t\t;adding offset to BX.\n";
+						code += "\t\tADD BX, BP\t\t\t;adding index to local variable.\n";
+						code += "\t\tMOV AX, [BX]\t\t;getting the value of the array at index BX\n";
+					}
+
+					code += "\t\tPUSH AX\t\t\t\t;pushing the value of the array at index "+ $3->get_name()+" \n";
+					code += "\t\tPUSH BX\t\t\t\t;pushing the address of the array element\n";
+					print_asm_to_file(asm_out, code);
 				}
 				string argument_name = $1->get_name() + "[" + $3->get_name() + "]";
 				$$ = new symbol_info(argument_name, temp->get_identifier());
@@ -809,6 +845,9 @@ logic_expression : rel_expression {
 		string argument_name = $1->get_name() + $2->get_name() + $3->get_name();
 		$$ = new symbol_info(argument_name, return_identifier);
 		fprintf(log_out, "Line %d - logic_expression : rel_expression LOGICOP rel_expression\n\n%s\n\n", line_count, $$->get_name().c_str());
+
+
+		
 	}
 	;
 			
@@ -821,6 +860,29 @@ rel_expression	: simple_expression {
 		string argument_identifier = "CONST_INT";
 		$$ = new symbol_info(argument_name, argument_identifier);
 		fprintf(log_out, "Line %d - rel_expression : simple_expression relop simple_expression\n\n%s\n\n", line_count, $$->get_name().c_str());
+
+
+		string label_if_true = get_new_label(&label_count);
+		string label_if_false = get_new_label(&label_count);
+
+		string left_name = $1->get_name();
+		string right_name = $3->get_name();
+
+		string code = "\t\t; Relational operator for " + left_name + " " + right_name + "\n";
+		code += "\t\tPOP BX\t\t; BX = " + right_name + "\n";
+		code += "\t\tPOP AX\t\t; AX = " + left_name + "\n";
+		code += "\t\tCMP AX, BX\t; Compare AX and BX\n";
+		code += "\t\t" + get_relop_equivalent_code($2->get_name()) + " " + label_if_true + "\n";
+		code += "\t\tPUSH 0\t\t; Push false to stack\n";
+		code += "\t\tJMP " + label_if_false + "\n";
+		code += "\t\t" +label_if_true + ":\n";
+		code += "\t\t\tPUSH 1\t\t; Push true to stack\n";
+		code += "\t\t" + label_if_false + ":\n";
+
+		print_asm_to_file(asm_out, code);
+
+
+
 	}
 	;
 				
@@ -839,6 +901,26 @@ simple_expression : term {
 
 		$$ = new symbol_info(argument_name, argument_identifier);
 		fprintf(log_out, "Lind %d - simple_expression : simple_expression ADDOP term \n\n%s\n\n", line_count, $$->get_name().c_str());
+
+
+
+		//generate code for add operation
+		string operation_name = "";
+		if($2->get_name() == "+"){
+			operation_name = "ADD";
+		} else {
+			operation_name = "SUB";
+		}
+
+		string code = "\t\t;line no: " + to_string(line_count) + " " + operation_name + " " + $1->get_name() + " " + $3->get_name() + "\n";
+		code += "\t\tPOP BX\t\t;load the right operand\n";
+		code += "\t\tPOP AX\t\t;load the left operand\n";
+
+		code += "\t\t" + operation_name + " AX, BX\t;perform the operation\n";
+		code += "\t\tPUSH AX\t\t;push the result into the stack\n";
+
+		print_asm_to_file(asm_out, code);
+
 	}
 	| simple_expression error {
 		string argument_name = $1->get_name();
@@ -906,6 +988,41 @@ term :	unary_expression {
 		string argument_name = left_name + operator_name + right_name;
 		$$ = new symbol_info(argument_name, return_identifier);
 		fprintf(log_out, "Line %d - term : term MULOP unary_expression\n\n%s\n\n", line_count, $$->get_name().c_str());
+
+
+		// generate code for the operator
+		string operation_name = "";
+		switch(operator_name[0]){
+			case '*':
+				operation_name = "IMUL";
+				break;
+			case '/':
+				operation_name = "IDIV";
+				break;
+			case '%':
+				operation_name = "MOD";
+				break;
+			default:
+				break;
+		}
+
+		string code = "\t\t;line no: " + to_string(line_count) + " " + operation_name + "\n";
+		code += "\t\t;" + left_name + " " + operator_name[0] + " " + right_name + "\n";
+		code += "\t\tPOP BX\t\t;pop the value of " + right_name + " from stack\n";
+		code += "\t\tPOP AX\t\t;pop the value of " + left_name + " from stack\n";
+
+		if(operation_name == "IMUL"){
+			code += "\t\tIMUL BX\t\t;multiply the values\n";
+		} else {
+			code += "\t\tIDIV BX\t\t;divide the values\n";
+			if(operation_name == "MOD"){
+				code += "\t\tMOV AX,DX\t\t;move the remainder to AX\n";
+			}
+		}
+		code += "\t\tPUSH AX\t\t;push the result to stack\n";
+
+		print_asm_to_file(asm_out, code);
+
 	}
     ;
 
@@ -916,6 +1033,21 @@ unary_expression : ADDOP unary_expression {
 		$$ = new symbol_info(argument_name, argument_identifier);
 		
 		fprintf(log_out, "Line %d - unary_expression : ADDOP unary_expression\n\n%s\n\n", line_count, $$->get_name().c_str());
+
+		// generate asm code for addop unary_expression
+		// only - need to negate the value
+		// for + no need to do anything
+
+		string exp_name = $2->get_name();
+
+		if($1->get_name() == "-"){
+			string code = "\t\t;line no: " + to_string(line_count) + " Negating the value\n";
+			code += "\t\tPOP AX\t\t; pop the value of " + exp_name + "\n";
+			code += "\t\tNEG AX\t\t; negate the value\n";
+			code += "\t\tPUSH AX\t\t; push the value of " + exp_name + "\n";
+
+			print_asm_to_file(asm_out, code);
+		} 
 	} 
 	| NOT unary_expression {
 		string argument_name = "!" + $2->get_name();
@@ -923,6 +1055,23 @@ unary_expression : ADDOP unary_expression {
 
 		$$ = new symbol_info(argument_name, argument_identifier);
 		fprintf(log_out, "Line %d - unary_expression : NOT unary_expression\n\n%s\n\n", line_count, $$->get_name().c_str());
+
+		string exp_name = $2->get_name();
+		string label_if_true =  get_new_label(&label_count);
+		string label_end =  get_new_label(&label_count);
+
+		// generate asm code for not expression
+		string code = "\t\t;line no " + to_string(line_count) + ": Logical NOT of " + exp_name + "\n";
+		code += "\t\tPOP \tAX\t\t\t;pop the value of the "+ exp_name +"\n";
+		code += "\t\tCMP \tAX, 0\t\t;compare the value of the "+ exp_name +" with 0\n";
+		code += "\t\tJE \t" + label_if_true + "\t\t\t;if equal jump to true label: " + label_if_true + "\n";
+		code += "\t\t\tPUSH \t0\t\t;else move 0 to AX\n";
+		code += "\t\t\tJMP \t" + label_end + "\t;jump to false label: " + label_end + "\n";
+		code += "\t\t" + label_if_true + ":\n";
+		code += "\t\t\tPUSH \t1\t\t;move 1 to AX\n";
+		code += "\t\t" + label_end + ":\n";
+
+		print_asm_to_file(asm_out, code);
 	} 
 	| factor {
 		$$ = $1;
@@ -978,13 +1127,27 @@ factor	: variable {
 				} else {
 					// okay function is declared with same number of arguments as called
 					// check if the argument types are same as the declared function
+					bool flag = true;
 					for(int i = 0; i < func_argument_count; i++){
 						if(func_param_list[i].get_type() != argument_identifier_list[i]){
 							// ! function is declared with different argument types than called
 							error_count++;
+							flag = false;
 							fprintf(log_out, "Error at line no:%d Type Mismatch. %d\'th argument of function \'%s\' is declared as %s\n\n", line_count,i+1, $1->get_name().c_str(), func_param_list[i].get_type().c_str());
 							fprintf(error_out, "Error at line no:%d Type Mismatch. %d\'th argument of function \'%s\' is declared as %s\n\n", line_count,i+1, $1->get_name().c_str(), func_param_list[i].get_type().c_str());
 						}
+					}
+
+					if(flag){
+						// okay function is declared with same argument types as called
+						// call the function
+						// generate asm code
+						string code = "\t\tCALL\t" + temp_func->get_name() + "\t\t\t;calling the function\n";
+						code += "\t\tPUSH AX\t\t\t\t;push the return value of " + temp_func->get_name() + " onto the stack\n";
+
+						//write code to the file
+						print_asm_to_file(asm_out, code);
+
 					}
 
 				}
@@ -1008,27 +1171,151 @@ factor	: variable {
 	| CONST_INT {
 		$$ = yylval.info;
 		fprintf(log_out, "Line %d - factor : CONST_INT\n\n%s\n\n", line_count, $$->get_name().c_str());
+
+		// generate asm code
+		string code = "\t\tPUSH\t" + $$->get_name() + "\t\t\t;push the constant value onto the stack\n";
+		print_asm_to_file(asm_out, code);
 	} 
 	| CONST_FLOAT {
 		$$ = yylval.info;
 		fprintf(log_out, "Line %d - factor : CONST_FLOAT\n\n%s\n\n", line_count, $$->get_name().c_str());
+
+		// ! our program don't support float values for now
 	}
 	| variable INCOP {
 		string argument_name = $1->get_name() + "++";
 		string argument_identifier = $1->get_identifier();
 
 		$$ = new symbol_info(argument_name, argument_identifier);
+		symbol_info *temp_var = $1;
 
-		fprintf(log_out, "Line %d - factor : variable INCOP\n\n%s\n\n", line_count, $1->get_name().c_str());
+		fprintf(log_out, "Line %d - factor : variable INCOP\n\n%s\n\n", line_count, $$->get_name().c_str());
+
+		// generate asm code
+		// first check if the the variable is valid
+		if(temp_var->get_identifier() == "ERROR"){
+			// ! variable is not valid
+		} else {
+			string code = "\t\t;line no: "+ to_string(line_count) +" variable increment\n";
+
+			// load the value of the variable into the AX register
+			// check if the variable is an array
+			if(is_array_declaration(temp_var->get_name())){
+				code += "\t\tPOP \tBX\t\t\t;popped array index from stack\n";
+            	code += "\t\tMOV AX, [BX]\t\t;setting AX to the value of " + temp_var->get_name() + "\n";
+			} else {
+				code += "\t\tPOP \tAX\t\t\t;popped variable " + temp_var->get_name() + " from stack\n";
+			}
+
+			// increment the value of the variable
+			code += "\t\tINC \tAX\t\t\t;incrementing the value of " + temp_var->get_name() + "\n";
+			
+			// store the value of the variable back in the stack
+
+	
+			// first check if the variable is an array
+			if (is_array_declaration(temp_var->get_name())){
+				// get the array name
+				string array_name = get_array_name(temp_var->get_name());
+				// find the array in the symbol table
+				symbol_info *temp_array = table.search(array_name);
+				// check if array global or not
+				if(temp_array->get_offset() == 0){
+					// array is global
+					code += "\t\tMOV [BX], AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
+				} else {
+					// array is local
+					code += "\t\tMOV [BP+" + to_string(temp_array->get_offset()) + "], AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
+				}
+			} else {
+				// variable is not an array
+				string var_name = temp_var->get_name();
+				// find the variable in the symbol table
+				symbol_info *temp_var = table.search(var_name);
+				// check if variable global or not
+				if(temp_var->get_offset() == 0){
+					// variable is global
+					code += "\t\tMOV "+ var_name +", AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
+				} else {
+					// variable is local
+					code += "\t\tMOV [BP+" + to_string(temp_var->get_offset()) + "], AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
+				}
+			}
+
+			print_asm_to_file(asm_out, code);
+			
+
+		}
 	}
 	| variable DECOP {
 		
 		string argument_name = $1->get_name() + "--";
 		string argument_identifier = $1->get_identifier();
 
+		symbol_info *temp_var = $1;
+
 		$$ = new symbol_info(argument_name, argument_identifier);
 
 		fprintf(log_out, "Line %d - factor : variable DECOP\n\n%s\n\n", line_count, $$->get_name().c_str());
+
+
+		// generate asm code
+		// first check if the the variable is valid
+		if(temp_var->get_identifier() == "ERROR"){
+			// ! variable is not valid
+		} else {
+			string code = "\t\t;line no: "+ to_string(line_count) +" variable decrement\n";
+
+			// load the value of the variable into the AX register
+			// check if the variable is an array
+			if(is_array_declaration(temp_var->get_name())){
+				code += "\t\tPOP \tBX\t\t\t;popped array index from stack\n";
+            	code += "\t\tMOV AX, [BX]\t\t;setting AX to the value of " + temp_var->get_name() + "\n";
+			} else {
+				code += "\t\tPOP \tAX\t\t\t;popped variable " + temp_var->get_name() + " from stack\n";
+			}
+
+			// decrement the value of the variable
+			code += "\t\tDEC \tAX\t\t\t;decrementing the value of " + temp_var->get_name() + "\n";
+
+			// store the value of the variable back in the stack
+
+	
+			// first check if the variable is an array
+			if (is_array_declaration(temp_var->get_name())){
+				// get the array name
+				string array_name = get_array_name(temp_var->get_name());
+				// find the array in the symbol table
+				symbol_info *temp_array = table.search(array_name);
+				// check if array global or not
+				if(temp_array->get_offset() == 0){
+					// array is global
+					code += "\t\tMOV [BX], AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
+				} else {
+					// array is local
+					code += "\t\tMOV [BP+" + to_string(temp_array->get_offset()) + "], AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
+				}
+			} else {
+				// variable is not an array
+				string var_name = temp_var->get_name();
+				// find the variable in the symbol table
+				symbol_info *temp_var = table.search(var_name);
+				// check if variable global or not
+				if(temp_var->get_offset() == 0){
+					// variable is global
+					code += "\t\tMOV "+ var_name +", AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
+				} else {
+					// variable is local
+					code += "\t\tMOV [BP+" + to_string(temp_var->get_offset()) + "], AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
+				}
+			}
+
+			print_asm_to_file(asm_out, code);
+			
+
+		}
+
+		
 	};
 	
 argument_list : arguments {

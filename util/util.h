@@ -146,9 +146,8 @@ string get_new_var_name(int* temp_var_count){
  * @param   temp_label_count        pointer to the count of temporary labels
  * @return                          name of the new label 
  */
-string get_new_var_label(int* temp_label_count){
-    string new_var_label = "@L_" + to_string((*temp_label_count)++);
-    (*temp_label_count) = (*temp_label_count) + 1;
+string get_new_label(int* temp_label_count){
+    string new_var_label = "@L_" + to_string(++(*temp_label_count));
     return new_var_label;
 }
 
@@ -161,5 +160,30 @@ string get_new_var_label(int* temp_label_count){
 string get_global_name(string var_name, symbol_table table){
     string temp = var_name + "_" + table.get_top()->get_id();
     return temp;
+}
+
+/**
+ * @brief this function is used to get the equivalent asm code for relop operator
+ * @param   relop        relop operator
+ * @return              asm code for relop operator
+ * 
+ */
+string get_relop_equivalent_code(string relop){
+    switch (relop) {
+        case "==":
+            return "JE";
+        case "!=":
+            return "JNE";
+        case ">":
+            return "JG";
+        case ">=":
+            return "JGE";
+        case "<":
+            return "JL";
+        case "<=":
+            return "JLE";
+        default:
+            break;
+    }
 }
 
