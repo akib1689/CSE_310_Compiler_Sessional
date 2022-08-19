@@ -14,12 +14,14 @@ class symbol_info {
     symbol_info* next;
     string name;
     string identifier;
-    string code;
-    string asmName;
+    string asm_name;
 
-    int size;               // defined for array
+    int size;               // defined for array as the size of the array
+                            // for function : -1 for variable: 0
     bool defined;           // defined for funciton
     vector<param> params;   // defined for function
+
+    int offset;             // defined for variable
 
    public:
     /** constructor
@@ -30,6 +32,22 @@ class symbol_info {
         this->name = name;
         this->identifier = identifier;
         this->size = 0;
+        this->offset = 0;
+        this->defined = false;
+        this->next = NULL;
+        this->asm_name = "";
+    }
+    /** overloaded constructor variable
+     * @param name name of the symbol
+     * @param identifier the type of symbol (variable, array, function)
+     * @param asm_name the asm name of the variable
+     */
+    symbol_info(string name, string identifier, string asm_name) {
+        this->name = name;
+        this->identifier = identifier;
+        this->asm_name = asm_name;
+        this->size = 0;
+        this->offset = 0;
         this->defined = false;
         this->next = NULL;
     }
@@ -42,8 +60,10 @@ class symbol_info {
         this->name = name;
         this->identifier = identifier;
         this->size = size;
+        this->offset = 0;
         this->defined = false;
         this->next = NULL;
+        this->asm_name = "";
     }
     /** constructor for function
      * @param name name of the symbol
@@ -54,11 +74,11 @@ class symbol_info {
         this->name = name;
         this->identifier = identifier;
         this->size = -1;
+        this->offset = 0;
         this->params = params;
         this->defined = false;
         this->next = NULL;
-        this->code = "";
-        this->asmName = "";
+        this->asm_name = "";
     }
 
     // copy constructor
@@ -68,10 +88,10 @@ class symbol_info {
         this->identifier = that.identifier;
         this->next = that.next;
         this->size = that.size;
+        this->offset = that.offset;
         this->defined = that.defined;
         this->params = that.params;
-        this->code = that.code;
-        this->asmName = that.asmName;
+        this->asm_name = that.asm_name;
     }
 
     // destructor
@@ -86,9 +106,9 @@ class symbol_info {
 
     void set_defined(bool defined) { this->defined = defined; }
 
-    void set_code(string code) { this->code = code; }
+    void set_asm_name(string asm_name) { this->asm_name = asm_name; }
 
-    void set_asmName(string asmName) { this->asmName = asmName; }
+    void set_offset(int offset) { this->offset = offset; }
 
     symbol_info* get_next() { return this->next; }
 
@@ -96,9 +116,7 @@ class symbol_info {
 
     string get_identifier() { return this->identifier; }
 
-    string get_code() { return this->code; }
-
-    string get_asmName() { return this->asmName; }
+    string get_asm_name() { return this->asm_name; }
 
     bool is_array() {return (this->size > 0);}
 
@@ -109,6 +127,8 @@ class symbol_info {
     bool is_defined() { return this->defined; }
 
     int get_size() { return this->size; }
+
+    int get_offset() { return this->offset; }
 
 
     int get_param_count() { return this->params.size(); }

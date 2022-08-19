@@ -238,5 +238,8 @@ class scope_table {
             }
         }
     }
+
+    //-----------------getter--------------------------
+    string get_id() { return this->id; }
 };
 #endif // SCOPE_TABLE_H

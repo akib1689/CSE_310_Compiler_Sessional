@@ -1,7 +1,8 @@
 %{
 #include <bits/stdc++.h>
-#include "symbol_table.h"
-#include "util.h"
+#include "../symbol_table/symbol_table.h"
+#include "../util/util.h"
+#include "../assembly/assembly.h"
 using namespace std;
 
 int yyparse(void);
@@ -9,12 +10,24 @@ int yylex(void);
 extern FILE *yyin;
 extern int line_count;
 extern int error_count;
+int temp_count = 0;
+int label_count = 0;
+
+
+vector<pair<string, int>> global_vars;
+
 FILE *fp;
 FILE *log_out;
 FILE *error_out;
+FILE *asm_out;
 
 string current_function_ret_type = "UNDEFINED";
 string current_function_name = "UNDEFINED";
+
+
+// asm variables
+int func_argument_count = 0;
+int func_var_count = 0;
 
 symbol_table table(7);
 
@@ -435,11 +448,38 @@ var_declaration : type_specifier declaration_list SEMICOLON {
 				string argument_name = declaration_list_names[i];
 				symbol_info* temp;
 				if (is_array_declaration(argument_name)){
+					// okay need to differentiate between global and local array
 					int array_size = get_array_size(argument_name);
 					string array_name = get_array_name(argument_name);
 					temp = new symbol_info(array_name, variable_type, array_size);
+					// check if the current scope is global scope or not
+					if(regex_match(table.get_top()->get_id(), regex("\\d+"))){
+						print_global_variable_name(asm_out, array_name, line_count, array_size);
+					}else{
+						func_var_count += array_size;
+
+						temp->set_offset(func_var_count*-2);
+
+						string asm_code = "\t\tSUB SP, " + to_string(func_var_count*2) + "\t\t\t;line no: "
+							+ to_string(line_count) + " " + array_name + " declared\n";
+						//print the offset
+						cout<<"offset: "<<temp->get_offset()<<endl;
+
+						print_asm_to_file(asm_out, asm_code);
+					}
+
 				} else {
 					temp = new symbol_info(argument_name, variable_type);
+					if(regex_match(table.get_top()->get_id(), regex("\\d+"))){
+						print_global_variable_name(asm_out, argument_name, line_count);
+					}else{
+						func_var_count++;
+						temp->set_offset(func_var_count*(-2));
+						cout<<"offset: "<<temp->get_offset()<<endl;
+						string asm_code = "\t\tSUB SP, 2\t\t\t;line no: " 
+							+ to_string(line_count) + " " + argument_name + " declared.\n";
+						print_asm_to_file(asm_out, asm_code);
+					}
 				}
 				if(!table.insert(temp)){
 					// ! multiple declaration error
@@ -459,12 +499,10 @@ var_declaration : type_specifier declaration_list SEMICOLON {
  	;
  		 
 type_specifier	: INT {
-		// cout<<"int detected"<<endl;
 		$$ = new symbol_info("int", "CONST_INT");
 		fprintf(log_out, "Line %d - type_specifier : INT\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
  	| FLOAT {
-		// cout<<"float detected"<<endl;
 		$$ = new symbol_info("float", "CONST_FLOAT");
 		fprintf(log_out, "Line %d - type_specifier : FLOAT\n\n%s\n\n", line_count, $$->get_name().c_str());
 		
@@ -510,7 +548,6 @@ declaration_list : declaration_list COMMA ID {
 		fprintf(log_out, "Line %d - declaration_list : ID LTHIRD CONST_INT RTHIRD\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
 	| declaration_list error {
-		// cout<<"error detected"<<endl;
 		string argument_name = $1->get_name();
 		string argument_identifier = "declaration_list";
 
@@ -522,8 +559,6 @@ declaration_list : declaration_list COMMA ID {
 		fprintf(log_out, "Error at line no:%d Declaration error detected.\n\n", line_count); */
 
 		fprintf(log_out, "Line %d - declaration_list : ID LTHIRD CONST_INT RTHIRD\n\n%s\n\n", line_count, $$->get_name().c_str());
-
-		
 	}
  	;
  		  
@@ -705,6 +740,8 @@ variable : ID {
 				// ! current symbol is found in the table and it is not an array so error
 				string argument_name = $1->get_name() + "[" + $3->get_name() + "]";
 				$$ = new symbol_info(argument_name, "ERROR");
+				fprintf(log_out, "Error at line no:%d Variable - %s is not an array\n\n", line_count, $1->get_name().c_str());
+				fprintf(error_out, "Error at line no:%d Variable - %s is not an array\n\n", line_count, $1->get_name().c_str());
 			}
 		}
 		fprintf(log_out, "Line %d - variable : ID LTHIRD expression RTHIRD\n\n%s\n\n",line_count, $$->get_name().c_str());
@@ -999,6 +1036,7 @@ argument_list : arguments {
 		fprintf(log_out, "Line %d - argument_list : arguments\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
 	| {
+		// no arguments
 		$$ = new symbol_info("", "void");
 		fprintf(log_out, "Line %d - argument_list : \n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
@@ -1031,19 +1069,27 @@ int main(int argc,char *argv[]) {
 	fclose(log_out);
 	error_out= fopen(argv[3],"w");
 	fclose(error_out);
+	asm_out= fopen(argv[4],"w");
+	fclose(asm_out);
 	
 	log_out= fopen(argv[2],"a");
 	error_out= fopen(argv[3],"a");
+	asm_out= fopen(argv[4],"a");
+
+	// initializing the asm file
+	init_assembly_file(asm_out);
 	
 
 	yyin=fp;
 	yyparse();
 	table.print_all(log_out);
+	print_predefined_proc(asm_out);
 	
 	fprintf(log_out, "Total Lines: %d\n", line_count);
 	fprintf(log_out, "Total Errors: %d\n", error_count);
 	fclose(log_out);
 	fclose(error_out);
+	fclose(asm_out);
 
 	return 0;
 }

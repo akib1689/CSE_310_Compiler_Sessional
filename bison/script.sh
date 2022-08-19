@@ -8,4 +8,4 @@ g++ -w -c -o l.o lex.yy.c
 echo 'Generated the scanner object file'
 g++ y.o l.o -lfl -o output.o
 echo 'All file produced successfully'
-./output.o input.txt log.txt error.txt
+./output.o input.c log.txt error.txt assembly.asm

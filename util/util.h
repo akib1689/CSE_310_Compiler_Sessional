@@ -1,5 +1,6 @@
 #include<bits/stdc++.h>
 #include "../symbol_table/param.h"
+#include "../symbol_table/symbol_table.h"
 
 using namespace std;
 /**
@@ -128,5 +129,37 @@ vector<param> get_param_type_list(string param_str){
         param_type_list.push_back(param("", param_type));
     }
     return param_type_list;
+}
+
+/**
+ * @brief this function is used to get a new name for a variable
+ * @param   temp_var_count      pointer to the count of temporary variables
+ * @return                      name of the new variable 
+ */
+string get_new_var_name(int* temp_var_count){
+    string new_var_name = "temp_var_" + to_string((*temp_var_count)++);
+    (*temp_var_count) = (*temp_var_count) + 1;
+    return new_var_name;
+}
+/**
+ * @brief this function is used to get a new lable for a variables
+ * @param   temp_label_count        pointer to the count of temporary labels
+ * @return                          name of the new label 
+ */
+string get_new_var_label(int* temp_label_count){
+    string new_var_label = "@L_" + to_string((*temp_label_count)++);
+    (*temp_label_count) = (*temp_label_count) + 1;
+    return new_var_label;
+}
+
+/**
+ * @brief this function is used to get a name of the variable w.r.t global scope
+ * @param   var_name        variable name of the variable
+ * @param   table           the symbol table
+ * @return                  name of the variable w.r.t global scope
+ */
+string get_global_name(string var_name, symbol_table table){
+    string temp = var_name + "_" + table.get_top()->get_id();
+    return temp;
 }
 

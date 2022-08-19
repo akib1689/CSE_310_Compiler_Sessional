@@ -200,5 +200,15 @@ class symbol_table {
             current = current->get_parent();
         }
     }
+
+    //------------------getter function-------------------------
+    /**
+     * @brief this function returns the topmost scope
+     *
+     * @return scope_table*    the topmost scope
+     */
+    scope_table* get_top() {
+        return this->top;
+    }
 };
 #endif // SYMBOL_TABLE_H
