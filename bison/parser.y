@@ -847,7 +847,69 @@ logic_expression : rel_expression {
 		fprintf(log_out, "Line %d - logic_expression : rel_expression LOGICOP rel_expression\n\n%s\n\n", line_count, $$->get_name().c_str());
 
 
-		
+		// generate assembly code for the relational operator
+		string left_name = $1->get_name();
+		string right_name = $3->get_name();
+		string code = "\t\t;line no: " + to_string(line_count) + "relational operator for\n";
+		code += "\t\t;left: " + left_name + "\n";
+		code += "\t\t;operator: " + operator_name + "\n";
+		code += "\t\t;right: " + right_name + "\n";
+
+		if (operator_name == "&&"){
+			string label_left_true = get_new_label(&label_count);
+			string label_whole_true = get_new_label(&label_count);
+			string label_end = get_new_label(&label_count);
+
+			code += "\t\t;left true label: " + label_left_true + "\n";
+			code += "\t\t;whole true label: " + label_whole_true + "\n";
+			code += "\t\t;end label: " + label_end + "\n";
+
+			code += "\t\tPOP BX\t\t;pop the right value : " + right_name + "\n";
+			code += "\t\tPOP AX\t\t;pop the left value : " + left_name + "\n";
+
+			code += "\t\tCMP AX, 0\t\t;compare the left value with false\n";
+			code += "\t\tJNE " + label_left_true + "\t\t;if not false, jump to left true label\n";
+			code += "\t\t\t;if left value is false, jump to whole false label\n";
+			code += "\t\t\tPUSH 0\t\t;push false\n";
+			code += "\t\t\tJMP " + label_end + "\t\t;jump to end label\n";
+			code += "\t\t" + label_left_true + ":\t\t;left true label\n";
+			code += "\t\t\tCMP BX, 0\t\t;compare the right value with false\n";
+			code += "\t\t\tJNE " + label_whole_true + "\t\t;if not false, jump to whole true label\n";
+			code += "\t\t\t\t;if right value is false, jump to whole false label\n";
+			code += "\t\t\t\tPUSH 0\t\t;push false\n";
+			code += "\t\t\t\tJMP " + label_end + "\t\t;jump to end label\n";
+			code += "\t\t" + label_whole_true + ":\t\t;whole true label\n";
+			code += "\t\t\tPUSH 1\t\t;push true\n";
+			code += "\t\t" + label_end + ":\t\t;end label\n";
+		} else {
+			string label_left_false = get_new_label(&label_count);
+			string label_whole_false = get_new_label(&label_count);
+			string label_end = get_new_label(&label_count);
+
+			code += "\t\t;left false label: " + label_left_false + "\n";
+			code += "\t\t;whole false label: " + label_whole_false + "\n";
+			code += "\t\t;end label: " + label_end + "\n";
+
+			code += "\t\tPOP BX\t\t;pop the right value : " + right_name + "\n";
+			code += "\t\tPOP AX\t\t;pop the left value : " + left_name + "\n";
+			code += "\t\tCMP AX, 0\t\t;compare the left value with false\n";
+			code += "\t\tJE " + label_left_false + "\t\t;if false, jump to left false label\n";
+			code += "\t\t\t;if left value is not false, jump to whole true label\n";
+			code += "\t\t\tPUSH 1\t\t;push true\n";
+			code += "\t\t\tJMP " + label_end + "\t\t;jump to end label\n";
+			code += "\t\t" + label_left_false + ":\t\t;left false label\n";
+			code += "\t\t\tCMP BX, 0\t\t;compare the right value with false\n";
+			code += "\t\t\tJE " + label_whole_false + "\t\t;if false, jump to whole false label\n";
+			code += "\t\t\t\t;if right value is not false, jump to whole true label\n";
+			code += "\t\t\t\tPUSH 1\t\t;push true\n";
+			code += "\t\t\t\tJMP " + label_end + "\t\t;jump to end label\n";
+			code += "\t\t" + label_whole_false + ":\t\t;whole false label\n";
+			code += "\t\t\tPUSH 0\t\t;push false\n";
+			code += "\t\t" + label_end + ":\t\t;end label\n";
+		}
+
+		print_asm_to_file(asm_out, code);
+
 	}
 	;
 			
