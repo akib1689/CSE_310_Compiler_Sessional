@@ -11,90 +11,43 @@
 .CODE
 		
 
-	foo  PROC
-		
-		PUSH BP
-        MOV BP, SP
-        
-        ; STORING THE GPRS
-        ; DX for returning results
-        PUSH AX
-        PUSH BX
-        PUSH CX
-        PUSHF
-        
-        
-		
-		MOV BX, [ x+0 ]
-		PUSH BX; line no 4 : x loaded
-		
-		
-		PUSH 0
-		POP BX; line no 4 : ; Array index in BX ; global array
-		SHL BX, 1; line no 4 :  ; because 2 byte element
-		PUSH y[BX]
-		PUSH BX; line no 4 : ; here goes the index
-		POP BX
-		POP AX
-		MOV [x + 0], AX; line no 4 : x assined
-		MOV BX, AX
-		PUSH BX
-
-		POP BX; line no 4 : ; previously pushed value on stack is removed
-		
-		
-		MOV BX, [ x+0 ]
-		PUSH BX; line no 5 : x loaded
-		POP BX; line no 5 :  return value saved in DX 
-		MOV DX, BX
-		JMP @L_1; line no 5 :  ; exit from the function
-		
-		; return point foo
-		@L_1: 
-		MOV SP, BP
-		SUB SP, 8
-		POPF  
-        
-        POP CX
-        POP BX
-        POP AX
-        
-        POP BP
-		RET 0
-		
-
-	foo ENDP
-
 	main  PROC
 		
 		mov AX, @DATA
 		mov DS, AX
 		; data segment loaded
 		
-		MOV CX, 6; line no 10 : ; new array of size 6
-		@L_3:
-		JCXZ @L_4
+		MOV CX, 4; line no 4 : ; new array of size 4
+		@L_2:
+		JCXZ @L_3
 		PUSH BX
 		DEC CX
-		JMP @L_3
-		@L_4: 
-		PUSH BX ; line no 10 : a declared
+		JMP @L_2
+		@L_3: 
+		PUSH BX ; line no 4 : a declared
 		
-		MOV BX, [ BP-22 ]
-		PUSH BX; line no 11 : a loaded
 		
-		CALL foo ; function foo called.; line no 11 : 
-		MOV BX, DX; line no 11 :  return result in DX.
-		PUSH BX
+		PUSH 2
+		POP BX; line no 5 : ; Array index in BX
+		SHL BX, 1; line no 5 :  ; because 2 byte element
+		NEG BX
+		ADD BX, -10; Array from BP/or data segment
+		ADD BX,BP
+		PUSH [BX]
+		PUSH BX; line no 5 : ; address pushed to stack
+		
+		PUSH 1
 		POP AX
-		MOV [BP + -22], AX; line no 11 : a assined
+		POP BX
+		POP DX; line no 5 :  ;array value popped
+		MOV [BX], AX; line no 5 : b assined
 		MOV BX, AX
 		PUSH BX
 
-		POP BX; line no 11 : ; previously pushed value on stack is removed
+		POP BX; line no 5 : ; previously pushed value on stack is removed
 		
 		; return point main
-		@L_2: 
+		@L_1: 
 		mov AH, 4Ch
 		int 21h
 		; returned control to OS

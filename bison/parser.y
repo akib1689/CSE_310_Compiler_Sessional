@@ -836,11 +836,11 @@ variable : ID {
 		} else {
 			// check if the variable is an array
 			symbol_info* temp;
+			string var_name = get_array_name(left->get_name());
 			if(is_array_declaration(left->get_name())){
 				code += "\t\tPOP \tBX\t\t\t;popped array index from stack\n";
 				// get the name of the array
-				string array_name = get_array_name(left->get_name());
-				temp = table.search(array_name);
+				temp = table.search(var_name);
 			}else{
 				temp = table.search(left->get_name());
 			}
@@ -853,21 +853,25 @@ variable : ID {
 				// variable is global
 				if(temp->is_array()){
 					// array
-					code += "\t\tMOV \t[BX], AX\t\t;assigning value to array element\n";
+					code += "\t\tMOV "+ var_name +"[BX], AX\t\t;assigning value to array element\n";
 				} else {
 					// scalar
-					code += "\t\tMOV \t[BP" + to_string(temp->get_offset()) + "], AX\t;assigning value to variable\n";
+					code += "\t\tMOV "+ var_name +", AX\t;assigning value to variable\n";
 				}
 			} else {
 				// variable is local
 				if(temp->is_array()){
 					// array
-					code += "\t\tMOV \t[BX], AX\t;assigning value to variable\n";
+					code += "\t\tMOV [BX], AX\t;assigning value to variable\n";
 				} else {
 					// scalar
-					code += "\t\tMOV \t[BP + " + to_string(temp->get_offset()) + "], AX\t;assigning value to variable\n";
+					code += "\t\tMOV [BP + " + to_string(temp->get_offset()) + "], AX\t;assigning value to variable\n";
 				}
 			}
+
+			// print the variable assignment code
+			print_asm_to_file(asm_out, code);
+
 		}
 	} 	
 	;
@@ -1190,6 +1194,28 @@ unary_expression : ADDOP unary_expression {
 factor	: variable {
 		$$ = $1;
 		fprintf(log_out, "Line %d - factor : variable\n\n%s\n\n", line_count, $$->get_name().c_str());
+		if ($$->get_identifier() == "ERROR"){
+			// ! error in variable
+		} else {
+			// generate asm code for variable only if the variable is array
+			symbol_info* temp;
+			string var_name = get_array_name($1->get_name());
+			if(is_array_declaration($1->get_name())){
+				string code = "\t\t;line no: " + to_string(line_count) + " " + $$->get_name() + "\n";
+				code += "\t\tPOP \tBX\t\t\t;popped array index from stack\n";
+				// get the name of the array
+				temp = table.search(var_name);
+				// temp is guaranteed to be not null
+
+				if(temp->get_offset() == 0){
+					// array is global
+					code += "\t\tMOV "+ var_name +"[BX], AX\t\t;assigning value to array element\n";
+				} else {
+					code += "\t\tMOV [BX], AX\t;assigning value to variable\n";	
+				}
+				print_asm_to_file(asm_out, code);
+			}
+		}
 	}
 	| ID LPAREN argument_list RPAREN {
 		string func_ret_type = "UNDEFINED";
