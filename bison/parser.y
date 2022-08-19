@@ -826,6 +826,7 @@ variable : ID {
 
 
 		// generate assembly code
+		// pop the right value from the stack
 		string code = "\t\t;line no : " + to_string(line_count) + 
 					"variable assignment: " + left->get_name() + " = " + right->get_name() + "\n";
 		code += "\t\tPOP AX\t\t\t\t;poping right side's value: " + right->get_name()  +"\n";
@@ -833,15 +834,19 @@ variable : ID {
 		if(left->get_identifier() == "ERROR"){
 			// ! variable is not valid
 		} else {
-			// load the value of the variable into the AX register
 			// check if the variable is an array
+			symbol_info* temp;
 			if(is_array_declaration(left->get_name())){
 				code += "\t\tPOP \tBX\t\t\t;popped array index from stack\n";
+				// get the name of the array
+				string array_name = get_array_name(left->get_name());
+				temp = table.search(array_name);
+			}else{
+				temp = table.search(left->get_name());
 			}
 
-			// find the variable in the symbol table
-			symbol_info* temp = table.search(left->get_name());
 			// temp is guranteed to have proper values
+			// cout<<"temp->get_identifier(): "<<temp->get_identifier()<<endl;
 			
 			//if the variable is global or local
 			if(temp->get_offset() == 0){
