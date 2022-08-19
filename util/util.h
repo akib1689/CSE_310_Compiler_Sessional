@@ -169,21 +169,27 @@ string get_global_name(string var_name, symbol_table table){
  * 
  */
 string get_relop_equivalent_code(string relop){
-    switch (relop) {
-        case "==":
-            return "JE";
-        case "!=":
-            return "JNE";
-        case ">":
-            return "JG";
-        case ">=":
-            return "JGE";
-        case "<":
-            return "JL";
-        case "<=":
-            return "JLE";
-        default:
-            break;
+    if (relop == "=="){
+        return "JE";
     }
+    else if(relop == "!="){
+        return "JNE";
+    }
+    else if(relop == ">"){
+        return "JG";
+    }
+    else if(relop == ">="){
+        return "JGE";
+    }
+    else if(relop == "<"){
+        return "JL";
+    }
+    else if(relop == "<="){
+        return "JLE";
+    }
+    else{
+        return "ERROR";
+    }
+    
 }
 

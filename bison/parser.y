@@ -824,6 +824,46 @@ variable : ID {
 		$$ = new symbol_info(argument_name, argument_identifier);
 		fprintf(log_out, "Line %d - expression : variable ASSIGNOP logic_expression\n\n%s\n\n", line_count, $$->get_name().c_str());
 
+
+		// generate assembly code
+		string code = "\t\t;line no : " + to_string(line_count) + 
+					"variable assignment: " + left->get_name() + " = " + right->get_name() + "\n";
+		code += "\t\tPOP AX\t\t\t\t;poping right side's value: " + right->get_name()  +"\n";
+		// first check if the variable is valid or not
+		if(left->get_identifier() == "ERROR"){
+			// ! variable is not valid
+		} else {
+			// load the value of the variable into the AX register
+			// check if the variable is an array
+			if(is_array_declaration(left->get_name())){
+				code += "\t\tPOP \tBX\t\t\t;popped array index from stack\n";
+			}
+
+			// find the variable in the symbol table
+			symbol_info* temp = table.search(left->get_name());
+			// temp is guranteed to have proper values
+			
+			//if the variable is global or local
+			if(temp->get_offset() == 0){
+				// variable is global
+				if(temp->is_array()){
+					// array
+					code += "\t\tMOV \t[BX], AX\t\t;assigning value to array element\n";
+				} else {
+					// scalar
+					code += "\t\tMOV \t[BP" + to_string(temp->get_offset()) + "], AX\t;assigning value to variable\n";
+				}
+			} else {
+				// variable is local
+				if(temp->is_array()){
+					// array
+					code += "\t\tMOV \t[BX], AX\t;assigning value to variable\n";
+				} else {
+					// scalar
+					code += "\t\tMOV \t[BP + " + to_string(temp->get_offset()) + "], AX\t;assigning value to variable\n";
+				}
+			}
+		}
 	} 	
 	;
 
