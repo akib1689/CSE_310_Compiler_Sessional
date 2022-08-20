@@ -1,3 +1,3 @@
-cd ../offline_4_question/sample_output
+cd ../offline_4_question/Sample_Output
 echo "trans"
-./sample_1.out input.c
+./sample_4.out input.c

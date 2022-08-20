@@ -105,6 +105,17 @@ void print_global_variable_name(FILE* asm_file, string name, int line_number, in
     freopen("assembly.asm", "a", asm_file);     // reopen the assembly file in append mode  
 }
 
+/**
+ * @brief function is used for terminating the main procedure
+ * @param asm_file  the file for asm code
+ */
+void return_to_dos(FILE* asm_file){
+    string code = "\t\t;returning to dos\n";
+    code += "\t\tMOV AH, 4CH";
+    code += "\t\tINT 24H";
+    print_asm_to_file(asm_file, code);
+}
+
 
 /**
  * @brief function that prints predefined functions to assembly file
@@ -238,6 +249,7 @@ void print_predefined_proc(FILE* asm_file){
     print_newline_proc(asm_file);
     print_char_print_proc(asm_file);
     print_int_print_proc(asm_file);
+    print_asm_to_file(asm_file, "END MAIN");
 }
 
 #endif // ASSEMBLY_H

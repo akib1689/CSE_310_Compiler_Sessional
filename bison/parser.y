@@ -54,6 +54,7 @@ void yyerror(char *s)
 %type <info> arguments logic_expression argument_list factor variable expression unary_expression 
 %type <info> program unit term simple_expression rel_expression expression_statement statement statements
 %type <info> var_declaration compound_statement declaration_list type_specifier parameter_list func_definition func_declaration
+%type <info> if_block_marker
 
 %nonassoc LOWER_THAN_ELSE LOWER_THAN_ERROR
 %nonassoc ELSE error
@@ -599,42 +600,117 @@ statement : var_declaration {
 		$$ = $2;
 		fprintf(log_out, "Line %d - statement : compound_statement\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
-	| FOR LPAREN expression_statement expression_statement expression RPAREN statement {
+	| FOR LPAREN expression_statement {
+		string for_start = get_new_label(&line_count);
+		string code = "\t\t;line no : " + to_string(line_count) + ";for loop evaluatoin\n";
+		code += "\t\t" + for_start + ":\t\t;for loop start label\n";
+
+		print_asm_to_file(asm_out, code);
+
+		$<info>$ = new symbol_info(for_start, "LABEL");
+	} expression_statement {
+		string for_end = get_new_label(&line_count);
+		string for_level_true = get_new_label(&line_count);
+
+		string code = "\t\tCMP AX, 0\t\t;compare the value with 0\n";
+		code += "\t\tJNE " + for_level_true + "\t\t;if true jump to true label\n";
+		code += "\t\tJMP " + for_end + "\t\t;if false jump to end label\n";
+		code += "\t\t" + for_level_true + ":\t\t;true label\n";
+
+		print_asm_to_file(asm_out, code);
+
+		$<info>$ = new symbol_info(for_end, "LABEL");
+	} expression {
+		string for_start = $<info>4->get_name();
+		string for_end = $<info>6->get_name();
+
+		string code = "\t\tPOP AX\t\t;pop the value from stack\n";
+		code += "\t\tJMP " + for_start + "\t\t;jump to start label\n";
+		code += "\t\t" + for_end + ":\t\t;end label\n";
+
+		print_asm_to_file(asm_out, code);
+
+	} RPAREN statement {
 		// cout<<"for loop detected"<<endl;
-		string argument_name = "for (" + $3->get_name() + $4->get_name() + $5->get_name() + ")" + $7->get_name();
+		string argument_name = "for (" + $3->get_name() + $5->get_name() + $7->get_name() + ")" + $10->get_name();
 		string argument_identifier = "statement";
 
 		$$ = new symbol_info(argument_name, argument_identifier);
 
 		fprintf(log_out, "Line %d - statement : FOR LPAREN expression_statement expression_statement expression RPAREN statement\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
-	| IF LPAREN expression RPAREN statement %prec LOWER_THAN_ELSE {
+	| IF LPAREN expression RPAREN if_block_marker statement %prec LOWER_THAN_ELSE {
 		// cout<<"if statement detected"<<endl;
-		string argument_name = "if (" + $3->get_name() + ")" + $5->get_name();
+		string argument_name = "if (" + $3->get_name() + ")" + $6->get_name();
 		string argument_identifier = "statement";
 
 		$$ = new symbol_info(argument_name, argument_identifier);
 
 		fprintf(log_out, "Line %d - statement : IF LPAREN expression RPAREN statement\n\n%s\n\n", line_count, $$->get_name().c_str());
+
+		// asm code
+		string if_false = $<info>5->get_name();
+		string code = "\t\t" + if_false + ":\t\t\t;if false label\n";
 	}
-	| IF LPAREN expression RPAREN statement ELSE statement {
+	| IF LPAREN expression RPAREN if_block_marker statement ELSE {
+		// asm code
+		string if_false = $<info>5->get_name();
+		string else_end = get_new_label(&label_count);
+
+		string code = "\t\tJMP " + else_end + "\t\t\t;jump to the end of the else statement\n";
+		code += "\t\t" + if_false + ":\t\t\t;if false label\n";
+
+		print_asm_to_file(asm_out, code);
+	} statement {
 		// cout<<"if else statement detected"<<endl;
-		string argument_name = "if (" + $3->get_name() + ")" + $5->get_name() + "else" + $7->get_name();
+		string argument_name = "if (" + $3->get_name() + ")" + $6->get_name() + "else" + $9->get_name();
 		string argument_identifier = "statement";
 
 		$$ = new symbol_info(argument_name, argument_identifier);
 
 		fprintf(log_out, "Line %d - statement : IF LPAREN expression RPAREN statement ELSE statement\n\n%s\n\n", line_count, $$->get_name().c_str());
+
+		// asm code
+		string end_label = $<info>8->get_name();
+
+		string code = "\t\t" + end_label + ":\t\t\t;end label of else\n";
+
+		print_asm_to_file(asm_out, code);
+		
 	}
-	| WHILE LPAREN expression RPAREN statement {
+	| WHILE {
+		// create a start label for while
+		string while_start = get_new_label(&label_count);
+		string code = "\t\t" + while_start + ": \t\t;while loop start";
+		print_asm_to_file(asm_out, code);
+		$<info>$ = new symbol_info(while_start, "LABEL");
+	} LPAREN expression {
+
+
+		string while_end = get_new_label(&label_count);
+		string code = "\t\tPOP AX\t\t;pop expression value\n";
+		code += "\t\tCMP AX, 0\t\t;check if expression is true\n";
+		code += "\t\tJE " + while_end + "\t\t;if false, jump to end of loop\n";
+		code += "\t\t;continue while loop";
+		print_asm_to_file(asm_out, code);
+		$<info>$ = new symbol_info(while_end, "LABEL");
+	} RPAREN statement {
 		// cout<<"while loop detected"<<endl;
 
-		string argument_name = "while (" + $3->get_name() + ")" + $5->get_name();
+		string argument_name = "while (" + $4->get_name() + ")" + $7->get_name();
 		string argument_identifier = "statement";
 
 		$$ = new symbol_info(argument_name, argument_identifier);
 
 		fprintf(log_out, "Line %d - statement : WHILE LPAREN expression RPAREN statement\n\n%s\n\n", line_count, $$->get_name().c_str());
+
+		// asm code
+		string while_start = $<info>2->get_name();
+		string while_end = $<info>5->get_name();
+
+		string code = "\t\tJMP " + while_start + "\t\t;jump back to start of loop\n";
+		code += "\t\t" + while_end + ": \t\t;while loop end";
+		print_asm_to_file(asm_out, code);
 	}
 	| PRINTLN LPAREN ID RPAREN SEMICOLON {
 		// cout<<"println detected"<<endl;
@@ -654,6 +730,18 @@ statement : var_declaration {
 				error_count++;
 				fprintf(log_out, "Error at line no:%d Variable - %s is not a variable\n\n", line_count, $3->get_name().c_str());
 				fprintf(error_out, "Error at line no:%d Variable - %s is not a variable\n\n", line_count, $3->get_name().c_str());
+			} else {
+				// okay temp is a variable
+				string code = "\t\t;line no : "+ to_string(line_count) + " " + argument_name + "\n";
+				if(temp->get_offset() == 0){
+					// global variable
+					code += "\t\tPUSH " + temp->get_name() + ";passing the value of " + temp->get_name() + " \n";
+				} else {
+					// local variable
+					code += "\t\tPUSH [BP + " + to_string(temp->get_offset()) + "];passing the value of " + temp->get_name() + " \n";
+				}
+				code += "\t\tCALL PRINT_INTEGER\n";
+				print_asm_to_file(asm_out, code);	
 			}
 		}
 
@@ -671,16 +759,34 @@ statement : var_declaration {
 			fprintf(log_out, "Error at line no:%d Function \'%s\' does not have a return type\n\n", line_count, current_function_name.c_str());
 			fprintf(error_out, "Error at line no:%d Function \'%s\' does not have a return type\n\n", line_count, current_function_name.c_str());
 			current_function_ret_type = "ERROR";
+		} else {
+			// generate asm code
+			string code = "\t\t;returning to caller\n";
+			code += "\t\tPOP AX\t\t;storing the return value of the function to the variable AX\n";
+			if(current_function_name == "main"){
+				// main function
+				return_to_dos(asm_out);
+			} else {
+				symbol_info* temp_func = table.search(current_function_name);
+				code += "\t\tMOV SP, BP\t\t;restoring the stack pointer\n";
+				code += "\t\tPOP BP\t\t\t;restoring the caller function's BP\n";
+				int num_param_count = temp_func->get_param_count();
+				code += "\t\tRET " + to_string(num_param_count * 2) + "\t\t;returning to the caller";
+				print_asm_to_file(asm_out, code);
+			}
 		}
 
 		$$ = new symbol_info(argument_name, argument_identifier);
 		fprintf(log_out, "Line %d - statement : RETURN expression SEMICOLON\n\n%s\n\n", line_count, $$->get_name().c_str());
+
 
 	}
 	;
 	  
 expression_statement : SEMICOLON {
 		$$ = new symbol_info(";", "SEMICOLON");
+
+		// no need to generate any code only single semicolon is present
 	}		
 	| expression SEMICOLON {
 		string argument_name = $1->get_name() + ";";
@@ -688,6 +794,10 @@ expression_statement : SEMICOLON {
 
 		$$ = new symbol_info(argument_name, argument_identifier);
 		fprintf(log_out, "Line %d - expression_statement : expression SEMICOLON\n\n%s\n\n", line_count, $$->get_name().c_str());
+		// generate code for asm file
+		string code = "\t\tPOP AX\t\t;Popped the expression " + argument_name + "'s value' ";
+		print_asm_to_file(asm_out, code);
+
 	}
 	;
 
@@ -763,7 +873,10 @@ variable : ID {
 						// local variable
 						code += "\t\tADD BX, " + to_string(temp->get_offset()) + "\t\t\t;adding offset to BX.\n";
 						code += "\t\tADD BX, BP\t\t\t;adding index to local variable.\n";
-						code += "\t\tMOV AX, [BX]\t\t;getting the value of the array at index BX\n";
+						code += "\t\tPUSH BP\t\t\t;push bp to stack.\n";
+						code += "\t\tMOV BP, BX\t\t\t;setting bp to bx.\n";
+						code += "\t\tMOV AX, [BP]\t\t;getting the value of the array at index BX\n";
+						code += "\t\tPOP BP\t\t\t\t;pop bp from stack.\n";
 					}
 
 					code += "\t\tPUSH AX\t\t\t\t;pushing the value of the array at index "+ $3->get_name()+" \n";
@@ -783,8 +896,8 @@ variable : ID {
 		fprintf(log_out, "Line %d - variable : ID LTHIRD expression RTHIRD\n\n%s\n\n",line_count, $$->get_name().c_str());
 	}
 	;
-	 
- expression : logic_expression {
+
+expression : logic_expression {
 		$$ = $1;
 		fprintf(log_out, "Line %d - expression : logic_expression\n\n%s\n\n", line_count, $$->get_name().c_str());
  	}
@@ -838,16 +951,13 @@ variable : ID {
 			symbol_info* temp;
 			string var_name = get_array_name(left->get_name());
 			if(is_array_declaration(left->get_name())){
-				code += "\t\tPOP \tBX\t\t\t;popped array index from stack\n";
+				code += "\t\tPOP BX\t\t\t;popped array index from stack\n";
 				// get the name of the array
 				temp = table.search(var_name);
 			}else{
 				temp = table.search(left->get_name());
 			}
 
-			// temp is guranteed to have proper values
-			// cout<<"temp->get_identifier(): "<<temp->get_identifier()<<endl;
-			
 			//if the variable is global or local
 			if(temp->get_offset() == 0){
 				// variable is global
@@ -862,7 +972,10 @@ variable : ID {
 				// variable is local
 				if(temp->is_array()){
 					// array
-					code += "\t\tMOV [BX], AX\t;assigning value to variable\n";
+					code += "\t\tPUSH BP\t\t;pushing the bp value in stack\n";
+					code += "\t\tMOV BP, BX\t;setting bp to bx\n";
+					code += "\t\tMOV [BP], AX\t;assigning value to variable\n";
+					code += "\t\tPOP BP\t\t;popping the bp value from stack\n";
 				} else {
 					// scalar
 					code += "\t\tMOV [BP + " + to_string(temp->get_offset()) + "], AX\t;assigning value to variable\n";
@@ -1211,7 +1324,10 @@ factor	: variable {
 					// array is global
 					code += "\t\tMOV "+ var_name +"[BX], AX\t\t;assigning value to array element\n";
 				} else {
-					code += "\t\tMOV [BX], AX\t;assigning value to variable\n";	
+					code += "\t\tPUSH BP\t\t\t;push base pointer\n";
+					code += "\t\tMOV BP,BX\t\t\t;set base pointer to BX\n";
+					code += "\t\tMOV [BP], AX\t;assigning value to variable\n";
+					code += "\t\tPOP BP\t\t\t;pop base pointer\n";	
 				}
 				print_asm_to_file(asm_out, code);
 			}
@@ -1335,7 +1451,10 @@ factor	: variable {
 			// check if the variable is an array
 			if(is_array_declaration(temp_var->get_name())){
 				code += "\t\tPOP \tBX\t\t\t;popped array index from stack\n";
-            	code += "\t\tMOV AX, [BX]\t\t;setting AX to the value of " + temp_var->get_name() + "\n";
+				code += "\t\tPUSH BP\t\t\t;push the base pointer onto the stack\n";
+				code += "\t\tMOV BP, BX\t\t\t;set the base pointer to the array index\n";
+            	code += "\t\tMOV AX, [BP]\t\t;setting AX to the value of " + temp_var->get_name() + "\n";
+				code += "\t\tPOP BP\t\t\t;pop the base pointer from the stack\n";
 			} else {
 				code += "\t\tPOP \tAX\t\t\t;popped variable " + temp_var->get_name() + " from stack\n";
 			}
@@ -1403,7 +1522,10 @@ factor	: variable {
 			// check if the variable is an array
 			if(is_array_declaration(temp_var->get_name())){
 				code += "\t\tPOP \tBX\t\t\t;popped array index from stack\n";
-            	code += "\t\tMOV AX, [BX]\t\t;setting AX to the value of " + temp_var->get_name() + "\n";
+				code += "\t\tPUSH BP\t\t;push the value of BP";
+				code += "\t\tMOV BP, BX\t\t;move the value of bx for array access";
+            	code += "\t\tMOV AX, [BP]\t\t;setting AX to the value of " + temp_var->get_name() + "\n";
+				code += "\t\tPOP BP\t\t; the value of bp restored";
 			} else {
 				code += "\t\tPOP \tAX\t\t\t;popped variable " + temp_var->get_name() + " from stack\n";
 			}
@@ -1477,6 +1599,16 @@ arguments : arguments COMMA logic_expression {
 		fprintf(log_out, "Line: %d - arguments : logic_expression\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
 	;
+if_block_marker: {
+	string if_false = get_new_label(&label_count);
+	string code = "\t\t;line no " + to_string(line_count) + " - if statement\n";
+	code += "\t\tPOP AX\t\t\t;pop the value of the expression\n";
+	code += "\t\tCMP AX, 0\t\t\t;compare the value with 0\n";
+	code += "\t\tJE " + if_false + "\t\t\t;if value is false, jump to the false label\n";
+	print_asm_to_file(asm_out, code);
+
+	$$ = new symbol_info(if_false, "LABEL");
+}
 %%
 int main(int argc,char *argv[]) {
 

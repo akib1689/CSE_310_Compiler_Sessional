@@ -13,10 +13,10 @@
 /offline_3_question/example_codes/y.o
 /offline_3_question/example_codes/y.tab.c
 /offline_3_question/example_codes/y.tab.h
-/offline_4_question/sample_output/code.asm
-/offline_4_question/sample_output/error.txt
-/offline_4_question/sample_output/log.txt
-/offline_4_question/sample_output/optimized_code.asm
+/offline_4_question/Sample_Output/code.asm
+/offline_4_question/Sample_Output/error.txt
+/offline_4_question/Sample_Output/log.txt
+/offline_4_question/Sample_Output/optimized_code.asm
 /bison/error.txt
 /bison/input.c
 /bison/assembly.asm
