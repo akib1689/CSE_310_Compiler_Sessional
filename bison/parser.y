@@ -637,32 +637,35 @@ statement : var_declaration {
 		fprintf(log_out, "Line %d - statement : compound_statement\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
 	| FOR LPAREN expression_statement {
-		string for_start = get_new_label(&label_count);
+		string for_start_label = get_new_label(&label_count);
+		string for_end_label = get_new_label(&label_count);
 		string code = "\t\t;line no : " + to_string(line_count) + ";for loop evaluatoin\n";
-		code += "\t\t" + for_start + ":\t\t;for loop start label\n";
+		code += "\t\t" + for_start_label + ":\t\t;for loop start label\n";
 
 		print_asm_to_file(asm_out, code);
 
-		$<info>$ = new symbol_info(for_start, "LABEL");
+		$<info>$ = new symbol_info(for_start_label, for_end_label);
 	} expression_statement {
-		string for_end = get_new_label(&label_count);
-		string for_level_true = get_new_label(&label_count);
+		string for_end_label = $<info>4->get_identifier();
+		string update_label = get_new_label(&label_count);
+		string for_true_label = get_new_label(&label_count);
 
 		string code = "\t\tCMP AX, 0\t\t;compare the value with 0\n";
-		code += "\t\tJNE " + for_level_true + "\t\t;if true jump to true label\n";
-		code += "\t\tJMP " + for_end + "\t\t;if false jump to end label\n";
-		code += "\t\t" + for_level_true + ":\t\t;true label\n";
+		code += "\t\tJNE " + for_true_label + "\t\t;if true jump to loop label\n";
+		code += "\t\tJMP " + for_end_label + "\t\t;if false jump to end label\n";
+		code += "\t\t" + update_label + ":\t\t;for loop true label\n";
 
 		print_asm_to_file(asm_out, code);
 
-		$<info>$ = new symbol_info(for_end, "LABEL");
+		$<info>$ = new symbol_info(update_label, for_true_label);
 	} expression {
-		string for_start = $<info>4->get_name();
-		string for_end = $<info>6->get_name();
+		string for_start_label = $<info>4->get_name();
+		string for_true_label = $<info>6->get_identifier();
+
 
 		string code = "\t\tPOP AX\t\t;pop the value from stack\n";
-		code += "\t\tJMP " + for_start + "\t\t;jump to start label\n";
-		code += "\t\t" + for_end + ":\t\t;end label\n";
+		code += "\t\tJMP " + for_start_label + "\t\t;jump to start label\n";
+		code += "\t\t" + for_true_label + ":\t\t;loop iteration label\n";
 
 		print_asm_to_file(asm_out, code);
 
@@ -674,6 +677,14 @@ statement : var_declaration {
 		$$ = new symbol_info(argument_name, argument_identifier);
 
 		fprintf(log_out, "Line %d - statement : FOR LPAREN expression_statement expression_statement expression RPAREN statement\n\n%s\n\n", line_count, $$->get_name().c_str());
+
+		// add the for loop end label
+		string for_end = $<info>4->get_identifier();
+		string update_label = $<info>6->get_name();
+		string code = "\t\tJMP " + update_label + "\t\t;update of the loop label\n";
+		code += "\t\t" + for_end + ":\t\t;for loop end label\n";
+
+		print_asm_to_file(asm_out, code);
 	}
 	| IF LPAREN expression RPAREN if_block_marker statement %prec LOWER_THAN_ELSE {
 		// cout<<"if statement detected"<<endl;
@@ -687,6 +698,8 @@ statement : var_declaration {
 		// asm code
 		string if_false = $<info>5->get_name();
 		string code = "\t\t" + if_false + ":\t\t\t;if false label\n";
+
+		print_asm_to_file(asm_out, code);
 	}
 	| IF LPAREN expression RPAREN if_block_marker statement ELSE {
 		// asm code
