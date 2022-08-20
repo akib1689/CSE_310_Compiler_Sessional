@@ -216,7 +216,7 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 						temp_func = new symbol_info(func_name, func_ret_type, func_param_list);
 						table.insert(temp_func);
 					}
-					// set the fundtion as defined
+					// set the function as defined
 					temp_func->set_defined(true);
 
 					// enter to the function scope
@@ -225,7 +225,10 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 					for(int i = 0; i < func_param_list.size(); i++){
 						string param_name = func_param_list[i].get_name();
 						string param_type = func_param_list[i].get_type();
-						bool result = table.insert(new symbol_info(param_name, param_type));
+						symbol_info* temp_param = new symbol_info(param_name, param_type);
+						int offset = func_param_list.size() - i + 1;
+						temp_param->set_offset(offset*2);
+						bool result = table.insert(temp_param);
 
 						if(!result){
 							// ! function parameter already declared
@@ -234,6 +237,9 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 							fprintf(error_out, "Error at line no:%d Function parameter \'%s\' already declared\n\n", line_count, param_name.c_str());
 						}
 					}
+
+					// declare the function
+					declare_procedure(asm_out, current_function_name);
 				}
 			} else {
 				// ! function is not declared as a function but is already declared
@@ -279,7 +285,10 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 					fprintf(log_out, "Error at line no:%d Function parameter has no name\n\n", line_count);
 					fprintf(error_out, "Error at line no:%d Function parameter has no name\n\n", line_count);
 				}
-				bool result = table.insert(new symbol_info(param_name, param_type));
+				symbol_info* temp_param = new symbol_info(param_name, param_type);
+				int offset = func_param_list.size() - i + 1;
+				temp_param->set_offset(offset*2);
+				bool result = table.insert(temp_param);
 
 				if(!result){
 					// ! function parameter already declared
@@ -288,6 +297,9 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 					fprintf(error_out, "Error at line no:%d Function parameter \'%s\' already declared\n\n", line_count, param_name.c_str());
 				}
 			}
+
+			// declare the function
+			declare_procedure(asm_out, current_function_name);
 		}
 
 	} compound_statement {
@@ -297,10 +309,11 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 		$$ = new symbol_info(argument_name, argument_identifier);
 		fprintf(log_out, "Line %d - function definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement\n\n%s\n\n", line_count, argument_name.c_str());
 
-		// asm code
-		symbol_info* temp = table.search(current_function_name);
-		// todo call finish proc
-		terminate_proc(asm_out, current_function_name, current_function_ret_type);
+		func_var_count = 0;
+		// asm code for function definition
+		// call finish proc
+		symbol_info* temp_func = table.search(current_function_name);
+		terminate_proc(asm_out, current_function_name, current_function_ret_type, temp_func->get_param_count());
 
 		string code = "\t" + current_function_name + " ENDP";
 		print_asm_to_file(asm_out, code);
@@ -355,6 +368,9 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 
 					// enter to the function scope
 					table.create_scope();
+
+					// declare the function
+					declare_procedure(asm_out, func_name);
 				}
 			}
 		} else {
@@ -364,6 +380,9 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 			table.insert(temp_func);
 			// enter to the function scope
 			table.create_scope();
+
+			// declare the function
+			declare_procedure(asm_out, func_name);
 		}
 		
 	} compound_statement {
@@ -373,6 +392,15 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 
 		$$ = new symbol_info(argument_name, argument_identifier);
 		fprintf(log_out, "Line no:%d - function definition : type_specifier ID LPAREN RPAREN compound_statement\n\n%s\n\n", line_count, argument_name.c_str());
+
+		// asm code for function definition
+		// call finish proc
+		func_var_count = 0;
+		symbol_info* temp_func = table.search(current_function_name);
+		terminate_proc(asm_out, current_function_name, current_function_ret_type, temp_func->get_param_count());
+
+		string code = "\t" + current_function_name + " ENDP";
+		print_asm_to_file(asm_out, code);
 	}
  	;				
 
@@ -469,7 +497,7 @@ var_declaration : type_specifier declaration_list SEMICOLON {
 
 						temp->set_offset(func_var_count*-2);
 
-						string asm_code = "\t\tSUB SP, " + to_string(func_var_count*2) + "\t\t\t;line no: "
+						string asm_code = "\t\tSUB SP, " + to_string(array_size*2) + "\t\t\t;line no: "
 							+ to_string(line_count) + " " + array_name + " declared\n";
 						print_asm_to_file(asm_out, asm_code);
 					}
@@ -609,7 +637,7 @@ statement : var_declaration {
 		fprintf(log_out, "Line %d - statement : compound_statement\n\n%s\n\n", line_count, $$->get_name().c_str());
 	}
 	| FOR LPAREN expression_statement {
-		string for_start = get_new_label(&line_count);
+		string for_start = get_new_label(&label_count);
 		string code = "\t\t;line no : " + to_string(line_count) + ";for loop evaluatoin\n";
 		code += "\t\t" + for_start + ":\t\t;for loop start label\n";
 
@@ -617,8 +645,8 @@ statement : var_declaration {
 
 		$<info>$ = new symbol_info(for_start, "LABEL");
 	} expression_statement {
-		string for_end = get_new_label(&line_count);
-		string for_level_true = get_new_label(&line_count);
+		string for_end = get_new_label(&label_count);
+		string for_level_true = get_new_label(&label_count);
 
 		string code = "\t\tCMP AX, 0\t\t;compare the value with 0\n";
 		code += "\t\tJNE " + for_level_true + "\t\t;if true jump to true label\n";
@@ -667,6 +695,8 @@ statement : var_declaration {
 
 		string code = "\t\tJMP " + else_end + "\t\t\t;jump to the end of the else statement\n";
 		code += "\t\t" + if_false + ":\t\t\t;if false label\n";
+
+		$<info>$ = new symbol_info(else_end, "LABEL");
 
 		print_asm_to_file(asm_out, code);
 	} statement {
@@ -748,7 +778,7 @@ statement : var_declaration {
 					// local variable
 					code += "\t\tPUSH [BP + " + to_string(temp->get_offset()) + "];passing the value of " + temp->get_name() + " \n";
 				}
-				code += "\t\tCALL PRINT_INTEGER\n";
+				code += "\t\tCALL PRINT_DECIMAL_INTEGER\n";
 				print_asm_to_file(asm_out, code);	
 			}
 		}
@@ -803,7 +833,7 @@ expression_statement : SEMICOLON {
 		$$ = new symbol_info(argument_name, argument_identifier);
 		fprintf(log_out, "Line %d - expression_statement : expression SEMICOLON\n\n%s\n\n", line_count, $$->get_name().c_str());
 		// generate code for asm file
-		string code = "\t\tPOP AX\t\t;Popped the expression " + argument_name + "'s value' ";
+		string code = "\t\tPOP AX\t\t\t\t;Popped the expression " + argument_name + "'s value' ";
 		print_asm_to_file(asm_out, code);
 
 	}
@@ -949,7 +979,7 @@ expression : logic_expression {
 		// generate assembly code
 		// pop the right value from the stack
 		string code = "\t\t;line no : " + to_string(line_count) + 
-					"variable assignment: " + left->get_name() + " = " + right->get_name() + "\n";
+					" - variable assignment: " + left->get_name() + " = " + right->get_name() + "\n";
 		code += "\t\tPOP AX\t\t\t\t;poping right side's value: " + right->get_name()  +"\n";
 		// first check if the variable is valid or not
 		if(left->get_identifier() == "ERROR"){
@@ -959,7 +989,7 @@ expression : logic_expression {
 			symbol_info* temp;
 			string var_name = get_array_name(left->get_name());
 			if(is_array_declaration(left->get_name())){
-				code += "\t\tPOP BX\t\t\t;popped array index from stack\n";
+				code += "\t\tPOP BX\t\t\t\t;popped array index from stack\n";
 				// get the name of the array
 				temp = table.search(var_name);
 			}else{
@@ -974,7 +1004,7 @@ expression : logic_expression {
 					code += "\t\tMOV "+ var_name +"[BX], AX\t\t;assigning value to array element\n";
 				} else {
 					// scalar
-					code += "\t\tMOV "+ var_name +", AX\t;assigning value to variable\n";
+					code += "\t\tMOV "+ var_name +", AX\t\t\t;assigning value to variable\n";
 				}
 			} else {
 				// variable is local
@@ -989,6 +1019,7 @@ expression : logic_expression {
 					code += "\t\tMOV [BP + " + to_string(temp->get_offset()) + "], AX\t;assigning value to variable\n";
 				}
 			}
+			code += "\t\tPUSH AX\t\t\t\t;pushing the value of the variable\n";
 
 			// print the variable assignment code
 			print_asm_to_file(asm_out, code);
@@ -1308,7 +1339,12 @@ unary_expression : ADDOP unary_expression {
 	| factor {
 		$$ = $1;
 		fprintf(log_out, "Line %d - unary_expression : factor\n\n%s\n\n", line_count, $$->get_name().c_str());
-		
+		if($$->get_identifier() == "VOID"){
+			// ! function is declared as void but called with arguments
+			error_count++;
+			fprintf(log_out, "Error at line no:%d  Function %s is declared as void but called with arguments\n\n", line_count, $1->get_name().c_str());
+			fprintf(error_out, "Error at line no:%d  Function %s is declared as void but called with arguments\n\n", line_count, $1->get_name().c_str());
+		}
 	} 
 	;
 	
@@ -1371,12 +1407,7 @@ factor	: variable {
 				vector<param> func_param_list = temp_func->get_params();
 				int func_argument_count = temp_func->get_param_count();
 				// check if the return type of the declared function is void or not
-				if(func_ret_type == "VOID"){
-					// ! function is declared as void but called with arguments
-					error_count++;
-					fprintf(log_out, "Error at line no:%d  Function %s is declared as void but called with arguments\n\n", line_count, $1->get_name().c_str());
-					fprintf(error_out, "Error at line no:%d  Function %s is declared as void but called with arguments\n\n", line_count, $1->get_name().c_str());
-				}else if(argument_name_list.size() != func_argument_count) {
+				if(argument_name_list.size() != func_argument_count) {
 					// ! function is declared with different number of arguments than called
 					error_count++;
 					fprintf(log_out, "Error at line no:%d  Function \'%s\' is declared with %d arguments but called with %d arguments\n\n", line_count, $1->get_name().c_str(), func_argument_count, argument_name_list.size());
@@ -1395,19 +1426,16 @@ factor	: variable {
 						}
 					}
 
-					if(flag){
-						// okay function is declared with same argument types as called
-						// call the function
-						// generate asm code
-						string code = "\t\tCALL\t" + temp_func->get_name() + "\t\t\t;calling the function\n";
-						code += "\t\tPUSH AX\t\t\t\t;push the return value of " + temp_func->get_name() + " onto the stack\n";
-
-						//write code to the file
-						print_asm_to_file(asm_out, code);
-
-					}
-
 				}
+
+				// okay function is declared with same argument types as called
+				// call the function
+				// generate asm code
+				string code = "\t\tCALL\t" + temp_func->get_name() + "\t\t\t;calling the function\n";
+				code += "\t\tPUSH AX\t\t\t\t;push the return value of " + temp_func->get_name() + " onto the stack\n";
+
+				//write code to the file
+				print_asm_to_file(asm_out, code);
 
 			}
 		}
@@ -1430,7 +1458,7 @@ factor	: variable {
 		fprintf(log_out, "Line %d - factor : CONST_INT\n\n%s\n\n", line_count, $$->get_name().c_str());
 
 		// generate asm code
-		string code = "\t\tPUSH\t" + $$->get_name() + "\t\t\t;push the constant value onto the stack\n";
+		string code = "\t\tPUSH " + $$->get_name() + "\t\t\t;push the constant value onto the stack\n";
 		print_asm_to_file(asm_out, code);
 	} 
 	| CONST_FLOAT {
@@ -1495,12 +1523,14 @@ factor	: variable {
 				// check if variable global or not
 				if(temp_var->get_offset() == 0){
 					// variable is global
-					code += "\t\tMOV "+ var_name +", AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
+					code += "\t\tMOV "+ var_name +", AX\t\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
 				} else {
 					// variable is local
 					code += "\t\tMOV [BP+" + to_string(temp_var->get_offset()) + "], AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
 				}
 			}
+
+			code += "\t\tPUSH AX\t\t\t;pushing the value of " + temp_var->get_name() + " back onto the stack\n";
 
 			print_asm_to_file(asm_out, code);
 			
@@ -1572,10 +1602,8 @@ factor	: variable {
 					code += "\t\tMOV [BP+" + to_string(temp_var->get_offset()) + "], AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
 				}
 			}
-
+			code += "\t\tPUSH AX\t\t\t;pushing the value of " + temp_var->get_name() + " back onto the stack\n";
 			print_asm_to_file(asm_out, code);
-			
-
 		}
 
 		
@@ -1644,6 +1672,7 @@ int main(int argc,char *argv[]) {
 	yyparse();
 	table.print_all(log_out);
 	print_predefined_proc(asm_out);
+	optimize_asm_code(asm_out);
 	
 	fprintf(log_out, "Total Lines: %d\n", line_count);
 	fprintf(log_out, "Total Errors: %d\n", error_count);

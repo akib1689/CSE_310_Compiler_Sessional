@@ -4,9 +4,6 @@ int main(){
 	c=1;
     for(i=0;i<4;i++){
         a=3;
-        while(a--){
-            b++;
-        }
     }
     println(a);
     println(b);

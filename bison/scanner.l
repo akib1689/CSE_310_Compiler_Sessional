@@ -77,6 +77,7 @@ ill_formed_identifier {int_litral}{identifier}
 "default" {return DEFAULT;}
 "continue" {return CONTINUE;}
 "printf" {return PRINTLN;}
+"println" {return PRINTLN;}
 [+-] {
     symbol_info* info=new symbol_info(yytext,"ADDOP");
     yylval.info = info;
