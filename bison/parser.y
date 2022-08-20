@@ -26,7 +26,6 @@ string current_function_name = "UNDEFINED";
 
 
 // asm variables
-int func_argument_count = 0;
 int func_var_count = 0;
 
 symbol_table table(7);
@@ -297,6 +296,15 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN {
 
 		$$ = new symbol_info(argument_name, argument_identifier);
 		fprintf(log_out, "Line %d - function definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement\n\n%s\n\n", line_count, argument_name.c_str());
+
+		// asm code
+		symbol_info* temp = table.search(current_function_name);
+		// todo call finish proc
+		terminate_proc(asm_out, current_function_name, current_function_ret_type);
+
+		string code = "\t" + current_function_name + " ENDP";
+		print_asm_to_file(asm_out, code);
+
 	}
 	| type_specifier ID LPAREN RPAREN {
 		string func_ret_type = $1->get_identifier();

@@ -1,11 +1,15 @@
-int x,y[10];
+int foo(int a);
+int foo(int a){
+	return a-3;
+}
+
+
+int bar(int a, int b){
+	return foo(a) + foo(b);
+}
+
+
 
 int main(){
-	int b[4],a;
-    a=5;
-	b[0] = 10;
-    b[1] = 20;
-    b[2] = 30;
-    b[3] = 40;
-    a = b[0] + b[1] + b[2] + b[3];
+	return bar(1,2);
 }

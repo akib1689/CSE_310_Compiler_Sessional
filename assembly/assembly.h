@@ -113,7 +113,43 @@ void return_to_dos(FILE* asm_file){
     string code = "\t\t;returning to dos\n";
     code += "\t\tMOV AH, 4CH";
     code += "\t\tINT 24H";
+    code += "\n";
     print_asm_to_file(asm_file, code);
+}
+
+/**
+ * @brief function to print declare a procedre
+ * @param asm_file  the file for asm code
+ * @param proc_name name of the procedure
+ */
+void declare_procedure(FILE* asm_file, string proc_name){
+    string code = "\t\t;declaring procedure " + proc_name +"\n";
+    code += "\t\tPROC " + proc_name + "\n";
+
+    if (proc_name == "main"){
+        code += "\t\tMOV AX, @DATA\n";
+        code += "\t\tMOV DS, AX\n";
+    } 
+    code += "\n";
+    code += "\t\tPUSH BP\t;save BP\n";
+    code += "\t\tMOV BP, SP\t;set BP to SP\n";
+
+    print_asm_to_file(asm_file, code);
+    
+}
+
+void terminate_proc(FILE* asm_file, string proc_name, string proc_ret_type){
+    if(proc_name == "main"){
+			return_to_dos(asm_out);
+		} else {
+			if(proc_ret_type == "CONST_VOID"){
+				string code = "\t\tMOV SP, BP\t;restoring the value of stack";
+				code += "\t\tPOP BP\t\t;restoring the value of base pointer";
+				code += "\t\tRET " + (temp->get_param_count()*2) +;
+
+				print_asm_to_file(asm_out, code);
+			}
+		}
 }
 
 
