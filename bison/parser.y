@@ -1290,6 +1290,7 @@ term :	unary_expression {
 		if(operation_name == "IMUL"){
 			code += "\t\tIMUL BX\t\t;multiply the values\n";
 		} else {
+			code += "\t\tXOR DX, DX\t\t;making the DX register 0 for div operation\n";
 			code += "\t\tIDIV BX\t\t;divide the values\n";
 			if(operation_name == "MOD"){
 				code += "\t\tMOV AX,DX\t\t;move the remainder to AX\n";
