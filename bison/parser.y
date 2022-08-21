@@ -1445,7 +1445,7 @@ factor	: variable {
 				// okay function is declared with same argument types as called
 				// call the function
 				// generate asm code
-				string code = "\t\tCALL\t" + temp_func->get_name() + "\t\t\t;calling the function\n";
+				string code = "\t\tCALL " + temp_func->get_name() + "\t\t\t;calling the function\n";
 				code += "\t\tPUSH AX\t\t\t\t;push the return value of " + temp_func->get_name() + " onto the stack\n";
 
 				//write code to the file
@@ -1686,7 +1686,8 @@ int main(int argc,char *argv[]) {
 	yyparse();
 	table.print_all(log_out);
 	print_predefined_proc(asm_out);
-	optimize_asm_code(asm_out);
+	
+	optimize_asm_code_push(asm_out, "assembly.asm", "temp.asm", 0);
 	
 	fprintf(log_out, "Total Lines: %d\n", line_count);
 	fprintf(log_out, "Total Errors: %d\n", error_count);
