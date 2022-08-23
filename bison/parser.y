@@ -1290,6 +1290,7 @@ term :	unary_expression {
 		if(operation_name == "IMUL"){
 			code += "\t\tIMUL BX\t\t;multiply the values\n";
 		} else {
+			code += "\t\tXOR DX, DX\t\t;making the DX register 0 for div operation\n";
 			code += "\t\tIDIV BX\t\t;divide the values\n";
 			if(operation_name == "MOD"){
 				code += "\t\tMOV AX,DX\t\t;move the remainder to AX\n";
@@ -1444,7 +1445,7 @@ factor	: variable {
 				// okay function is declared with same argument types as called
 				// call the function
 				// generate asm code
-				string code = "\t\tCALL\t" + temp_func->get_name() + "\t\t\t;calling the function\n";
+				string code = "\t\tCALL " + temp_func->get_name() + "\t\t\t;calling the function\n";
 				code += "\t\tPUSH AX\t\t\t\t;push the return value of " + temp_func->get_name() + " onto the stack\n";
 
 				//write code to the file
@@ -1830,7 +1831,8 @@ int main(int argc,char *argv[]) {
 	yyparse();
 	table.print_all(log_out);
 	print_predefined_proc(asm_out);
-	optimize_asm_code(asm_out);
+	
+	optimize_asm_code_push(asm_out, "assembly.asm", "temp.asm", 0);
 	
 	fprintf(log_out, "Total Lines: %d\n", line_count);
 	fprintf(log_out, "Total Errors: %d\n", error_count);

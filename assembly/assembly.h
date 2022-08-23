@@ -297,9 +297,6 @@ string remove_comments(char* line){
     while(line[i] != '\0' && line[i] != '\n'){
         if(line[i] == ';'){
             break;
-        }else if (line[i] == '\t'){
-            i++;
-            continue;
         }
         line_without_comments += line[i];
         i++;
@@ -313,13 +310,16 @@ string remove_comments(char* line){
  *        removing unnecessary labels and comments
  *        push consicutive statements to one line
  * @param asm_file      the file to optimize
+ * @return              if there is any push pop statement that is changed
  */
-/* void optimize_asm_code(FILE* asm_file){
+bool optimize_asm_code_push(FILE* asm_file, char* file_name, char* dest_file, bool marker){
     vector<string> lines;
 
+    bool no_change = true;
+
     // open the file in reading mode
-    freopen("assembly.asm", "r", asm_file);
-    FILE *optimized_file = fopen("optimized.asm", "w");
+    freopen(file_name, "r", asm_file);
+    FILE *optimized_file = fopen(dest_file, "w");
     char *line;         // pointer to a line in the file
     size_t len = 0;     // length of the line
     ssize_t read;       // number of bytes read from the file
@@ -328,113 +328,54 @@ string remove_comments(char* line){
     while ((read = getline(&line, &len, asm_file)) != -1) {
         // remove comments from the line
         string line_wc = remove_comments(line);
+        //cout<<line_wc<<endl;
         // if the line is not empty
+        
         if (line_wc.length() != 0)
         {
             lines.push_back(remove_comments(line));
         }
     }
 
-    
-    for (int i = 0; i < lines.size()-1; i++) {
-        
-    }
+    for (int i = 0; i < lines.size()-1; i++){
+        if (lines[i].find("PUSH") != string::npos && lines[i+1].find("POP") != string::npos) {
+            string pushed_value = lines[i].substr(lines[i].find(" ")+1);
+            string popped_value = lines[i+1].substr(lines[i+1].find(" ")+1);
+            // cout<<"found the consicutive push pop "<< pushed_value << " " << popped_value <<endl;
 
-    int count = 0;
-    while (count < lines.size()) {
-        // if there is two consecutive push pop statements
-        // then remove the second one
-        // and replace with mov
-        if (lines[count].find("PUSH") != string::npos && lines[count+1].find("POP") != string::npos) {
-            // find the pushed value
-            string pushed_value = lines[count].substr(lines[count].find(" ")+1);
-            // find the popped value
-            string popped_value = lines[count+1].substr(lines[count+1].find(" ")+1);
-            // if the pushed value is the same as the popped value
-            // then do nothing
             if (pushed_value == popped_value) {
-                lines.erase(lines.begin()+count);
-                lines.erase(lines.begin()+count);
+                // erase both the values
+                lines[i] = '\0';
+                lines[i+i] = '\0';
+                
             } else {
                 // else replace the push pop with mov
-                lines[count] = "MOV " + popped_value + ", " + pushed_value;
-                lines.erase(lines.begin()+(count+1));
+                lines[i] = "MOV " + popped_value + ", " + pushed_value;
+                lines[i] = '\0';
             }
-            lines.erase(lines.begin()+(count+1));
-        } else {
-            count++;
+            no_change = false;
         }
-    }
-    
+    } 
 
-     
+    if(marker){
+        freopen(file_name, "w", asm_file);
+    }
 
     // print the lines in the optimized file
     for (int i = 0; i < lines.size(); i++){
         // size of the line[i] variable
         // cout<<lines[i]<<" "<<len<<endl;
         print_asm_to_file(optimized_file, lines[i]);
+        if (marker)
+        {
+            print_asm_to_file(asm_file, lines[i]);
+        }
+        
     }
 
     fclose(optimized_file);                      // close the temp file
-    freopen("assembly.asm", "a", asm_file);     // reopen the assembly file in append mode
-} */
-
-void optimize_asm_code(FILE *asm_file)
-{
-    vector<string> code_list;
-    vector<string> token_up;
-    vector<string> token_down;
-
-    ifstream file_in("code.asm");
-    string temp;
-
-    while (getline(file_in, temp))
-    {
-        code_list.push_back(temp);
-    }
-
-    int line_count = code_list.size();
-
-    for (int i = 0; i < line_count - 1; i++)
-    {
-        if ((code_list[i].size() < 4) || (code_list[i + 1].size() < 4))
-        {
-            print_asm_to_file(asm_file, code_list[i]);
-        }
-        else if ((code_list[i].substr(1, 3) == "MOV") && (code_list[i + 1].substr(1, 3) == "MOV"))
-        {
-            stringstream ss_up(code_list[i]);
-            stringstream ss_down(code_list[i + 1]);
-
-            while (getline(ss_up, temp, ' '))
-            {
-                token_up.push_back(temp);
-            }
-
-            while (getline(ss_down, temp, ' '))
-            {
-                token_down.push_back(temp);
-            }
-
-            if ((token_up[1].substr(0, token_up[1].size() - 1) == token_down[2]) && (token_down[1].substr(0, token_down[1].size() - 1) == token_up[2]))
-            {
-                print_asm_to_file(asm_file, code_list[i]);
-                i++;
-            }
-            else
-            {
-                print_asm_to_file(asm_file, code_list[i]);
-            }
-
-            token_up.clear();
-            token_down.clear();
-        }
-        else
-        {
-            print_asm_to_file(asm_file, code_list[i]);
-        }
-    }
-}
-
+    freopen(file_name, "a", asm_file);     // reopen the assembly file in append mode
+    cout<<"pass finished"<<endl;
+    return no_change;
+} 
 #endif // ASSEMBLY_H
