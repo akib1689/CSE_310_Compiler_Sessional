@@ -19,7 +19,7 @@ int main(){
 	k = 4;
 	ll = 6;
 	
-	while(k--){
+	while(--k){
 		ll = ll + 3;
 	}
  

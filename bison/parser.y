@@ -1480,12 +1480,12 @@ factor	: variable {
 
 		// ! our program don't support float values for now
 	}
-	| variable INCOP {
-		string argument_name = $1->get_name() + "++";
-		string argument_identifier = $1->get_identifier();
+	| INCOP variable {
+		string argument_name = "++" + $2->get_name();
+		string argument_identifier = $2->get_identifier();
 
 		$$ = new symbol_info(argument_name, argument_identifier);
-		symbol_info *temp_var = $1;
+		symbol_info *temp_var = $2;
 
 		fprintf(log_out, "Line %d - factor : variable INCOP\n\n%s\n\n", line_count, $$->get_name().c_str());
 
@@ -1550,6 +1550,148 @@ factor	: variable {
 
 		}
 	}
+	| variable INCOP {
+		string argument_name = $1->get_name() + "++";
+		string argument_identifier = $1->get_identifier();
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+		symbol_info *temp_var = $1;
+
+		fprintf(log_out, "Line %d - factor : variable INCOP\n\n%s\n\n", line_count, $$->get_name().c_str());
+
+		// generate asm code
+		// first check if the the variable is valid
+		if(temp_var->get_identifier() == "ERROR"){
+			// ! variable is not valid
+		} else {
+			string code = "\t\t;line no: "+ to_string(line_count) +" variable increment\n";
+
+			// load the value of the variable into the AX register
+			// check if the variable is an array
+			if(is_array_declaration(temp_var->get_name())){
+				code += "\t\tPOP \tBX\t\t\t;popped array index from stack\n";
+				code += "\t\tPUSH BP\t\t\t;push the base pointer onto the stack\n";
+				code += "\t\tMOV BP, BX\t\t\t;set the base pointer to the array index\n";
+            	code += "\t\tMOV AX, [BP]\t\t;setting AX to the value of " + temp_var->get_name() + "\n";
+				code += "\t\tPOP BP\t\t\t;pop the base pointer from the stack\n";
+			} else {
+				code += "\t\tPOP \tAX\t\t\t;popped variable " + temp_var->get_name() + " from stack\n";
+			}
+
+			// store the value of the variable back in the stack
+			code += "\t\tPUSH AX\t\t\t;pushing the value of " + temp_var->get_name() + " back onto the stack\n";
+
+
+			// increment the value of the variable
+			code += "\t\tINC \tAX\t\t\t;incrementing the value of " + temp_var->get_name() + "\n";
+			
+
+	
+			// first check if the variable is an array
+			if (is_array_declaration(temp_var->get_name())){
+				// get the array name
+				string array_name = get_array_name(temp_var->get_name());
+				// find the array in the symbol table
+				symbol_info *temp_array = table.search(array_name);
+				// check if array global or not
+				if(temp_array->get_offset() == 0){
+					// array is global
+					code += "\t\tMOV [BX], AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
+				} else {
+					// array is local
+					code += "\t\tMOV [BP+" + to_string(temp_array->get_offset()) + "], AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
+				}
+			} else {
+				// variable is not an array
+				string var_name = temp_var->get_name();
+				// find the variable in the symbol table
+				symbol_info *temp_var = table.search(var_name);
+				// check if variable global or not
+				if(temp_var->get_offset() == 0){
+					// variable is global
+					code += "\t\tMOV "+ var_name +", AX\t\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
+				} else {
+					// variable is local
+					code += "\t\tMOV [BP+" + to_string(temp_var->get_offset()) + "], AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
+				}
+			}
+
+
+			print_asm_to_file(asm_out, code);
+			
+
+		}
+	}
+	| DECOP variable {
+		string argument_name = "--" + $2->get_name();
+		string argument_identifier = $2->get_identifier();
+
+		symbol_info *temp_var = $2;
+
+		$$ = new symbol_info(argument_name, argument_identifier);
+
+		fprintf(log_out, "Line %d - factor : variable DECOP\n\n%s\n\n", line_count, $$->get_name().c_str());
+
+
+		// generate asm code
+		// first check if the the variable is valid
+		if(temp_var->get_identifier() == "ERROR"){
+			// ! variable is not valid
+		} else {
+			string code = "\t\t;line no: "+ to_string(line_count) +" variable decrement\n";
+
+			// load the value of the variable into the AX register
+			// check if the variable is an array
+			if(is_array_declaration(temp_var->get_name())){
+				code += "\t\tPOP \tBX\t\t\t;popped array index from stack\n";
+				code += "\t\tPUSH BP\t\t;push the value of BP";
+				code += "\t\tMOV BP, BX\t\t;move the value of bx for array access";
+            	code += "\t\tMOV AX, [BP]\t\t;setting AX to the value of " + temp_var->get_name() + "\n";
+				code += "\t\tPOP BP\t\t; the value of bp restored";
+			} else {
+				code += "\t\tPOP \tAX\t\t\t;popped variable " + temp_var->get_name() + " from stack\n";
+			}
+
+			// decrement the value of the variable
+			code += "\t\tDEC \tAX\t\t\t;decrementing the value of " + temp_var->get_name() + "\n";
+
+
+
+	
+			// first check if the variable is an array
+			if (is_array_declaration(temp_var->get_name())){
+				// get the array name
+				string array_name = get_array_name(temp_var->get_name());
+				// find the array in the symbol table
+				symbol_info *temp_array = table.search(array_name);
+				// check if array global or not
+				if(temp_array->get_offset() == 0){
+					// array is global
+					code += "\t\tMOV [BX], AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
+				} else {
+					// array is local
+					code += "\t\tMOV [BP+" + to_string(temp_array->get_offset()) + "], AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
+				}
+			} else {
+				// variable is not an array
+				string var_name = temp_var->get_name();
+				// find the variable in the symbol table
+				symbol_info *temp_var = table.search(var_name);
+				// check if variable global or not
+				if(temp_var->get_offset() == 0){
+					// variable is global
+					code += "\t\tMOV "+ var_name +", AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
+				} else {
+					// variable is local
+					code += "\t\tMOV [BP+" + to_string(temp_var->get_offset()) + "], AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
+				}
+			}
+
+			// store the value of the variable back in the stack
+			code += "\t\tPUSH AX\t\t\t;pushing the value of " + temp_var->get_name() + " back onto the stack\n";
+			print_asm_to_file(asm_out, code);
+		}
+	}
 	| variable DECOP {
 		
 		string argument_name = $1->get_name() + "--";
@@ -1581,10 +1723,14 @@ factor	: variable {
 				code += "\t\tPOP \tAX\t\t\t;popped variable " + temp_var->get_name() + " from stack\n";
 			}
 
+			// store the value of the variable back in the stack
+			code += "\t\tPUSH AX\t\t\t;pushing the value of " + temp_var->get_name() + " back onto the stack\n";
+
+
 			// decrement the value of the variable
 			code += "\t\tDEC \tAX\t\t\t;decrementing the value of " + temp_var->get_name() + "\n";
 
-			// store the value of the variable back in the stack
+
 
 	
 			// first check if the variable is an array
@@ -1615,7 +1761,6 @@ factor	: variable {
 					code += "\t\tMOV [BP+" + to_string(temp_var->get_offset()) + "], AX\t\t;storing the value of " + temp_var->get_name() + " back in the stack\n";
 				}
 			}
-			code += "\t\tPUSH AX\t\t\t;pushing the value of " + temp_var->get_name() + " back onto the stack\n";
 			print_asm_to_file(asm_out, code);
 		}
 
