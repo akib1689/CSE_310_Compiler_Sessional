@@ -1833,6 +1833,7 @@ int main(int argc,char *argv[]) {
 	print_predefined_proc(asm_out);
 	
 	optimize_asm_code_push(asm_out, "assembly.asm", "temp.asm", 0);
+	// while(!optimize_asm_code_push(asm_out, "temp.asm", "optimized.asm", 1));
 	
 	fprintf(log_out, "Total Lines: %d\n", line_count);
 	fprintf(log_out, "Total Errors: %d\n", error_count);

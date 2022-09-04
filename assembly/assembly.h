@@ -291,17 +291,21 @@ void print_predefined_proc(FILE* asm_file){
  * @param line the line to remove comments from
  * @return the line without comments
  */
-string remove_comments(char* line){
-    string line_without_comments = "";
-    int i = 0;
-    while(line[i] != '\0' && line[i] != '\n'){
-        if(line[i] == ';'){
-            break;
-        }
-        line_without_comments += line[i];
-        i++;
+char* remove_comments(char* line){
+    char* temp = (char*)malloc(sizeof(char)*(strlen(line)+1));
+    strcpy(temp, line);
+    char* comment_start = strstr(temp, ";");
+    if(comment_start != NULL){
+        *comment_start = '\n';
+        *(comment_start+1) = '\0';
     }
-    return line_without_comments;
+    // replace tabs with spaces
+    char* tab_start = strstr(temp, "\t");
+    while(tab_start != NULL){
+        *tab_start = ' ';
+        tab_start = strstr(temp, "\t");
+    }
+    return temp;
 }
 
 
@@ -326,17 +330,24 @@ bool optimize_asm_code_push(FILE* asm_file, char* file_name, char* dest_file, bo
 
     // read the file line by line
     while ((read = getline(&line, &len, asm_file)) != -1) {
-        // remove comments from the line
-        string line_wc = remove_comments(line);
-        //cout<<line_wc<<endl;
-        // if the line is not empty
-        
-        if (line_wc.length() != 0)
-        {
-            lines.push_back(remove_comments(line));
+        char* line_without_comments = remove_comments(line);
+
+        // check the length of the line
+        if (strlen(line_without_comments) == 1) {
+            continue;
         }
+        // cout<<line_without_comments<<strlen(line_without_comments)<<endl;
+        lines.push_back(line_without_comments);
     }
 
+    // delete the lines with only newline
+    for(int i = 0; i < lines.size(); i++){
+        if(lines[i].length() == 1){
+            lines.erase(lines.begin()+i);
+            i--;
+        }
+    }
+/* 
     for (int i = 0; i < lines.size()-1; i++){
         if (lines[i].find("PUSH") != string::npos && lines[i+1].find("POP") != string::npos) {
             string pushed_value = lines[i].substr(lines[i].find(" ")+1);
@@ -361,6 +372,7 @@ bool optimize_asm_code_push(FILE* asm_file, char* file_name, char* dest_file, bo
         freopen(file_name, "w", asm_file);
     }
 
+ */
     // print the lines in the optimized file
     for (int i = 0; i < lines.size(); i++){
         // size of the line[i] variable

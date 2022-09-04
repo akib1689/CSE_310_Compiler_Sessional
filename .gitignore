@@ -27,3 +27,5 @@
 /bison/y.o
 /bison/y.tab.c
 /bison/y.tab.h
+/bison/temp.asm
+/bison/optimized.asm

@@ -3,191 +3,7 @@
 .DATA
 .CODE
 	
-	f PROC
-		PUSH BP		
-		MOV BP, SP	
-		SUB SP, 2			
-		PUSH [BP + -2]				
-		PUSH 5			
-		
-		POP AX				
-		MOV [BP + -2], AX	
-		POP AX				
-		@L_1: 		
-		PUSH [BP + -2]				
-		PUSH 0			
-		
-		POP BX		
-		POP AX		
-		CMP AX, BX	
-		JG @L_2
-		PUSH 0		
-		JMP @L_3
-		@L_2:
-		POP AX		
-		CMP AX, 0		
-		JE @L_4		
-		
-		PUSH [BP + 4]				
-		
-		POP 	AX			
-		INC 	AX			
-		MOV [BP+4], AX		
-		POP AX				
-		PUSH [BP + -2]				
-		
-		POP 	AX			
-		DEC 	AX			
-		MOV [BP+-2], AX		
-		POP AX				
-		JMP @L_1		
-		@L_4: 		
-		PUSH 3			
-		PUSH [BP + 4]				
-		
-		
-		POP BX		
-		POP AX		
-		IMUL BX		
-		PUSH AX		
-		PUSH 7			
-		
-		POP BX		
-		POP AX		
-		SUB AX, BX	
-		PUSH AX		
-		
-		POP AX		
-		MOV SP, BP		
-		POP BP			
-		RET 2		
-		PUSH [BP + 4]				
-		PUSH 9			
-		
-		POP AX				
-		MOV [BP + 4], AX	
-		POP AX				
-	f ENDP
-	
-	g PROC
-		PUSH BP		
-		MOV BP, SP	
-		SUB SP, 2			
-		SUB SP, 2			
-		PUSH [BP + -2]				
-		PUSH [BP + 6]				
-		CALL f			
-		PUSH AX				
-		PUSH [BP + 6]				
-		
-		POP BX		
-		POP AX		
-		ADD AX, BX	
-		PUSH AX		
-		PUSH [BP + 4]				
-		
-		POP BX		
-		POP AX		
-		ADD AX, BX	
-		PUSH AX		
-		
-		POP AX				
-		MOV [BP + -2], AX	
-		POP AX				
-		PUSH [BP + -4]				
-		PUSH 0			
-		
-		POP AX				
-		MOV [BP + -4], AX	
-		POP AX				
-		
-		@L_5:		
-		PUSH [BP + -4]				
-		PUSH 7			
-		
-		POP BX		
-		POP AX		
-		CMP AX, BX	
-		JL @L_7
-		PUSH 0		
-		JMP @L_8
-		@L_7:
-			PUSH 1		
-		@L_8:
-		POP AX				
-		CMP AX, 0		
-		JNE @L_10		
-		JMP @L_6		
-		@L_9:		
-		PUSH [BP + -4]				
-		
-		POP 	AX			
-		INC 	AX			
-		MOV [BP+-4], AX		
-		POP AX		
-		JMP @L_5		
-		@L_10:		
-		PUSH [BP + -4]				
-		PUSH 3			
-		
-		
-		POP BX		
-		POP AX		
-		XOR DX, DX		
-		IDIV BX		
-		PUSH AX		
-		PUSH 0			
-		
-		POP BX		
-		POP AX		
-		CMP AX, BX	
-		JE @L_11
-		PUSH 0		
-		JMP @L_12
-		@L_11:
-			PUSH 1		
-		@L_12:
-		
-		POP AX			
-		CMP AX, 0			
-		JE @L_13			
-		PUSH [BP + -2]				
-		PUSH [BP + -2]				
-		PUSH 5			
-		
-		POP BX		
-		POP AX		
-		ADD AX, BX	
-		PUSH AX		
-		
-		POP AX				
-		MOV [BP + -2], AX	
-		POP AX				
-		JMP @L_14			
-		@L_13:			
-		PUSH [BP + -2]				
-		PUSH [BP + -2]				
-		PUSH 1			
-		
-		POP BX		
-		POP AX		
-		SUB AX, BX	
-		PUSH AX		
-		
-		POP AX				
-		MOV [BP + -2], AX	
-		POP AX				
-		@L_14:			
-		JMP @L_9		
-		@L_6:		
-		PUSH [BP + -2]				
-		
-		POP AX		
-		MOV SP, BP		
-		POP BP			
-		RET 4		
-	g ENDP
-	
+	main PROC
 		MOV AX, @DATA
 		MOV DS, AX
 		PUSH BP		
@@ -195,107 +11,138 @@
 		SUB SP, 2			
 		SUB SP, 2			
 		SUB SP, 2			
+		SUB SP, 2			
 		PUSH [BP + -2]				
-		PUSH 1			
-		
-		POP AX				
-		MOV [BP + -2], AX	
-		PUSH AX				
-		PUSH [BP + -4]				
-		PUSH 2			
-		
-		POP AX				
-		MOV [BP + -4], AX	
-		POP AX				
-		PUSH [BP + -2]				
-		PUSH [BP + -2]				
-		PUSH [BP + -4]				
-		CALL g			
-		PUSH AX				
+		PUSH 0			
 		
 		POP AX				
 		MOV [BP + -2], AX	
 		POP AX				
+		
+		@L_1:		
+		PUSH [BP + -2]				
+		PUSH 6			
+		
+		POP BX		
+		POP AX		
+		CMP AX, BX	
+		JL @L_3
+		PUSH 0		
+		JMP @L_4
+		@L_3:
+			PUSH 1		
+		@L_4:
+		POP AX				
+		CMP AX, 0		
+		JNE @L_6		
+		@L_5:		
+		PUSH [BP + -2]				
+		
+		POP 	AX			
+		PUSH AX			
+		INC 	AX			
+		MOV [BP+-2], AX		
+		POP AX		
+		JMP @L_1		
+		@L_6:		
 		
 		PUSH [BP + -2]
 		CALL PRINT_DECIMAL_INTEGER
+		JMP @L_5		
+		@L_2:		
 		PUSH [BP + -6]				
-		PUSH 0			
+		PUSH 4			
 		
 		POP AX				
 		MOV [BP + -6], AX	
 		POP AX				
+		PUSH [BP + -8]				
+		PUSH 6			
 		
-		@L_15:		
+		POP AX				
+		MOV [BP + -8], AX	
+		POP AX				
+		@L_7: 		
 		PUSH [BP + -6]				
-		PUSH 4			
-		
-		POP BX		
-		POP AX		
-		CMP AX, BX	
-		JL @L_17
-		PUSH 0		
-		JMP @L_18
-		@L_17:
-			PUSH 1		
-		@L_18:
-		POP AX				
-		CMP AX, 0		
-		JNE @L_20		
-		JMP @L_16		
-		@L_19:		
-		PUSH [BP + -6]				
-		
-		POP 	AX			
-		INC 	AX			
-		MOV [BP+-6], AX		
-		POP AX		
-		JMP @L_15		
-		@L_20:		
-		PUSH [BP + -2]				
-		PUSH 3			
-		
-		POP AX				
-		MOV [BP + -2], AX	
-		POP AX				
-		@L_21: 		
-		PUSH [BP + -2]				
 		PUSH 0			
 		
 		POP BX		
 		POP AX		
 		CMP AX, BX	
-		JG @L_22
+		JG @L_8
 		PUSH 0		
-		JMP @L_23
-		@L_22:
+		JMP @L_9
+		@L_8:
 			PUSH 1		
-		@L_23:
+		@L_9:
 		POP AX		
 		CMP AX, 0		
-		JE @L_24		
+		JE @L_10		
 		
-		PUSH [BP + -4]				
+		PUSH [BP + -8]				
+		PUSH [BP + -8]				
+		PUSH 3			
+		
+		POP BX		
+		POP AX		
+		ADD AX, BX	
+		PUSH AX		
+		
+		POP AX				
+		MOV [BP + -8], AX	
+		POP AX				
+		PUSH [BP + -6]				
 		
 		POP 	AX			
-		INC 	AX			
-		MOV [BP+-4], AX		
+		PUSH AX			
+		DEC 	AX			
+		MOV [BP+-6], AX		
 		POP AX				
-		PUSH [BP + -2]				
+		JMP @L_7		
+		@L_10: 		
+		
+		PUSH [BP + -8]
+		CALL PRINT_DECIMAL_INTEGER
+		
+		PUSH [BP + -6]
+		CALL PRINT_DECIMAL_INTEGER
+		PUSH [BP + -6]				
+		PUSH 4			
+		
+		POP AX				
+		MOV [BP + -6], AX	
+		POP AX				
+		PUSH [BP + -8]				
+		PUSH 6			
+		
+		POP AX				
+		MOV [BP + -8], AX	
+		POP AX				
+		@L_11: 		
+		PUSH [BP + -6]				
 		
 		POP 	AX			
 		DEC 	AX			
-		MOV [BP+-2], AX		
+		POP AX		
+		CMP AX, 0		
+		JE @L_12		
+		
+		PUSH [BP + -8]				
+		PUSH [BP + -8]				
+		PUSH 3			
+		
+		POP BX		
+		POP AX		
+		ADD AX, BX	
+		PUSH AX		
+		
 		POP AX				
-		JMP @L_21		
-		@L_24: 		
-		JMP @L_19		
-		@L_16:		
+		MOV [BP + -8], AX	
+		POP AX				
+		JMP @L_11		
+		@L_12: 		
 		
-		PUSH [BP + -2]
-		CALL PRINT_DECIMAL_INTEGER
-		
-		PUSH [BP + -4]
+		PUSH [BP + -8]
 		CALL PRINT_DECIMAL_INTEGER
 		
 		PUSH [BP + -6]
@@ -325,6 +172,7 @@ PRINT_NEWLINE ENDP
 		PUSH BP
 		MOV BP, SP
 		
+		PUSH AX
 		PUSH BX
 		PUSH CX
 		PUSH DX
@@ -332,7 +180,6 @@ PRINT_NEWLINE ENDP
 		MOV DX, [BP + 4]
 		MOV AH, 2
 		INT 21H
-		POPF
 		POP DX
 		POP CX
 		POP BX
@@ -354,6 +201,7 @@ PRINT_CHAR ENDP
 		PUSHF
 		MOV AX, [BP+4]
 		
+		OR AX, AX
 		JNS @POSITIVE_NUMBER
 		
 		PUSH AX
@@ -389,7 +237,6 @@ PRINT_CHAR ENDP
 		
 		
 		
-		@LOOP_PRINT:
 				POP DX
 				OR DX, 30h
 				MOV AH, 2
